@@ -11,8 +11,13 @@ import { ClothingSuggestions } from '@/components/ClothingSuggestions';
 import { FoodSuggestions } from '@/components/FoodSuggestions';
 import { MedicalTips } from '@/components/MedicalTips';
 import { EmergencyButton } from '@/components/EmergencyButton';
-import { WeatherSummary } from '@/components/WeatherSummary'; // Added
-import { Loader2, AlertTriangle, Search, LocateFixed, Sun, MapPinned } from 'lucide-react';
+import { WeatherSummary } from '@/components/WeatherSummary';
+import { SmartDayPlanner } from '@/components/SmartDayPlanner';
+import { BatterySaverAlert } from '@/components/BatterySaverAlert';
+import { WeatherStory } from '@/components/WeatherStory';
+import { OfflineSurvivalKit } from '@/components/OfflineSurvivalKit';
+import { AirQualityAlerts } from '@/components/AirQualityAlerts';
+import { Loader2, AlertTriangle, Search, LocateFixed, Sun, MapPinned, Route, Languages, ShieldCheck, UserCheck, Stethoscope, MessageCircleQuestion, LinkIcon, CalendarClock } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,6 +49,8 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const [isClient, setIsClient] = useState(false);
+  const [showDayPlanAdvice, setShowDayPlanAdvice] = useState(false);
+  const [userStatus, setUserStatus] = useState<string>("Safe"); // For "Mark Me Safe" and QR
 
   useEffect(() => {
     setIsClient(true);
@@ -72,6 +79,7 @@ export default function HomePage() {
     }
     setLoadingWeather(true);
     setError(null);
+    setShowDayPlanAdvice(false); // Reset advice visibility on new fetch
     try {
       const response = await fetch(
         `https://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API_KEY}&q=${query}&days=3`
@@ -129,14 +137,21 @@ export default function HomePage() {
     }
   };
 
+  const handlePlanMyDayClick = () => {
+    setShowDayPlanAdvice(true);
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center p-4 md:p-8 relative">
+      <OfflineSurvivalKit />
       <header className="w-full max-w-6xl mb-8 text-center">
         <h1 className="text-4xl md:text-5xl font-bold text-primary flex items-center justify-center">
           <Sun className="w-10 h-10 md:w-12 md:w-12 mr-3 animate-spin [animation-duration:10s]" /> Weatherwise 2.0
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground mt-2">Your intelligent weather companion</p>
       </header>
+       
+      <BatterySaverAlert weatherData={weatherData} />
 
       <main className="w-full max-w-6xl space-y-8">
         {!location && (loadingLocation || loadingWeather) && (
@@ -177,6 +192,18 @@ export default function HomePage() {
         <WeatherDisplay weatherData={weatherData} loading={loadingWeather || (loadingLocation && !weatherData)} />
         
         <WeatherSummary weatherData={weatherData} loadingWeather={loadingWeather || (loadingLocation && !weatherData)} />
+        
+        <SmartDayPlanner 
+            weatherData={weatherData} 
+            loadingWeather={loadingWeather || (loadingLocation && !weatherData)}
+            onPlanMyDayClick={handlePlanMyDayClick}
+            showAdvice={showDayPlanAdvice}
+        />
+
+        <WeatherStory weatherData={weatherData} loadingWeather={loadingWeather || (loadingLocation && !weatherData)} />
+        
+        <AirQualityAlerts latitude={location?.latitude} longitude={location?.longitude} />
+
 
         {weatherData && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -205,8 +232,30 @@ export default function HomePage() {
 
         {isClient && location && <NearbySheltersMap latitude={location.latitude} longitude={location.longitude} />}
 
+        {/* Placeholder Sections for Future Complex Features */}
+        <SectionCard title="Mark Me Safe & Volunteer Help" icon={ShieldCheck} className="opacity-50">
+          <p className="text-muted-foreground">This section will allow users to mark themselves as safe during emergencies and find/offer volunteer help. Requires Firebase backend integration.</p>
+          <div className="mt-4 flex gap-4">
+            <Button disabled><UserCheck className="mr-2"/> Mark Me Safe (Future)</Button>
+            <Button variant="outline" disabled><Stethoscope className="mr-2"/> Find/Offer Help (Future)</Button>
+          </div>
+          <p className="text-xs mt-2 text-muted-foreground italic">Note: User status ({userStatus}) is a placeholder for this feature.</p>
+        </SectionCard>
+        
+        <SectionCard title="More Features (Coming Soon)" icon={Route} className="opacity-50">
+            <ul className="list-disc list-inside text-muted-foreground space-y-2">
+                <li><CalendarClock className="inline mr-2 h-4 w-4"/>Weather-Based Reminder System (complex: needs storage & scheduling)</li>
+                <li><LinkIcon className="inline mr-2 h-4 w-4"/>Live Weather Cam Integration (optional: needs API for local cams)</li>
+                <li><Languages className="inline mr-2 h-4 w-4"/>Multi-Language Support (English, Hindi, Marathi - i18n setup)</li>
+                <li><Route className="inline mr-2 h-4 w-4"/>Route Safety Checker (complex: needs mapping & risk data)</li>
+                <li><Stethoscope className="inline mr-2 h-4 w-4"/>Hospital Queue Wait-Time Estimator (complex: needs data source)</li>
+                <li><MessageCircleQuestion className="inline mr-2 h-4 w-4"/>AI Weather Bot (complex: conversational AI flow)</li>
+            </ul>
+        </SectionCard>
+
+
       </main>
-      <EmergencyButton />
+      <EmergencyButton latitude={location?.latitude} longitude={location?.longitude} currentStatus={userStatus} />
       <footer className="w-full max-w-6xl mt-12 pt-8 border-t border-primary/20 text-center">
         <p className="text-sm text-muted-foreground">
           Weatherwise 2.0 &copy; {new Date().getFullYear()}. Weather data powered by <a href="https://www.weatherapi.com/" title="Free Weather API" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">WeatherAPI.com</a>.
