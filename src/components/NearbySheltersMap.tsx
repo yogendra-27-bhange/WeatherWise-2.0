@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L, { type LatLngExpression, type Map as LeafletMap } from 'leaflet';
 import ReactDOMServer from 'react-dom/server';
@@ -53,8 +53,6 @@ function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }
       const currentZoom = map.getZoom();
       const newCenterLatLng = L.latLng(center as L.LatLngTuple);
       
-      // Check if center or zoom actually changed to avoid redundant setView calls
-      // Added a small tolerance for LatLng comparison
       if (currentZoom !== zoom || !currentCenter.equals(newCenterLatLng, 0.00001)) {
         map.setView(center, zoom);
       }
@@ -74,20 +72,24 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   const [loadingPois, setLoadingPois] = useState(false);
   const [poiError, setPoiError] = useState<string | null>(null);
   const { toast } = useToast();
-  const [mapInstance, setMapInstance] = useState<LeafletMap | null>(null);
+  const mapInstanceRef = useRef<LeafletMap | null>(null);
 
   const currentMapCenter = useMemo<LatLngExpression>(() => {
     return [latitude, longitude];
   }, [latitude, longitude]);
 
   useEffect(() => {
-    // Cleanup function to remove map instance if component unmounts
+    // This effect runs once on mount and its cleanup runs once on unmount.
+    // The map instance is set by `whenCreated` callback of MapContainer.
     return () => {
-      if (mapInstance) {
-        mapInstance.remove();
+      // Access the map instance from the ref at the time of cleanup.
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null; // Clean up the ref
       }
     };
-  }, [mapInstance]);
+  }, []); // Empty dependency array ensures this effect runs once on mount and cleans up on unmount.
+
 
   const fetchNearbyPlaces = useCallback(async (lat: number, lon: number) => {
     if (!MAPBOX_TOKEN) {
@@ -184,7 +186,7 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
             scrollWheelZoom={true}
             style={{height: '100%', width: '100%'}}
             className="rounded-b-lg"
-            whenCreated={setMapInstance}
+            whenCreated={(map) => { mapInstanceRef.current = map; }}
         >
           <ChangeView center={currentMapCenter} zoom={INITIAL_MAP_ZOOM} />
           <TileLayer
@@ -219,3 +221,4 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
     </SectionCard>
   );
 }
+
