@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -9,7 +10,6 @@ import { MusicRecommendations } from '@/components/MusicRecommendations';
 import { ClothingSuggestions } from '@/components/ClothingSuggestions';
 import { FoodSuggestions } from '@/components/FoodSuggestions';
 import { MedicalTips } from '@/components/MedicalTips';
-// import { NearbySheltersMap } from '@/components/NearbySheltersMap'; // Original import
 import { EmergencyButton } from '@/components/EmergencyButton';
 import { Loader2, AlertTriangle, Search, LocateFixed, Sun, MapPinned } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
@@ -20,10 +20,9 @@ import { SectionCard } from '@/components/SectionCard';
 
 const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
 
-// Dynamically import NearbySheltersMap with SSR disabled
 const NearbySheltersMap = dynamic(
   () => import('@/components/NearbySheltersMap').then(mod => mod.NearbySheltersMap),
-  { 
+  {
     ssr: false,
     loading: () => (
       <SectionCard title="Nearby Facilities" icon={MapPinned}>
@@ -43,6 +42,11 @@ export default function HomePage() {
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleLocationError = useCallback((err: GeolocationPositionError | Error) => {
     let message = "Unable to retrieve your location. Please enter it manually.";
@@ -84,13 +88,13 @@ export default function HomePage() {
       console.error("Error fetching weather data:", err);
       setError(err.message || "Failed to fetch weather data.");
       toast({ variant: "destructive", title: "Weather Data Error", description: err.message || "Could not load weather information." });
-      setWeatherData(null); // Clear previous data on error
+      setWeatherData(null);
     } finally {
       setLoadingWeather(false);
-      setLoadingLocation(false); // Ensure location loading stops after weather fetch attempt
+      setLoadingLocation(false);
     }
   }, [toast]);
-  
+
   const requestGeolocation = useCallback(() => {
     setLoadingLocation(true);
     setError(null);
@@ -140,7 +144,7 @@ export default function HomePage() {
             <p className="text-lg text-muted-foreground">Fetching your location and weather...</p>
           </div>
         )}
-        
+
         {error && !loadingWeather && (
           <div className="p-6 bg-destructive/10 border border-destructive rounded-lg shadow-md text-center">
             <div className="flex items-center justify-center mb-2">
@@ -149,7 +153,7 @@ export default function HomePage() {
             </div>
           </div>
         )}
-        
+
         {(!location || error) && !loadingLocation && !loadingWeather && (
           <form onSubmit={handleManualLocationSubmit} className="flex flex-col sm:flex-row gap-2 items-center p-6 bg-card rounded-lg shadow-lg">
             <Input
@@ -169,34 +173,34 @@ export default function HomePage() {
           </form>
         )}
 
-        <WeatherDisplay weatherData={weatherData} loading={loadingWeather || loadingLocation && !weatherData} />
+        <WeatherDisplay weatherData={weatherData} loading={loadingWeather || (loadingLocation && !weatherData)} />
 
         {weatherData && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-8">
               <MusicRecommendations weatherCondition={weatherData.current.condition.text} />
-              <ClothingSuggestions 
-                weatherCondition={weatherData.current.condition.text} 
+              <ClothingSuggestions
+                weatherCondition={weatherData.current.condition.text}
                 temperature={weatherData.current.temp_c}
-                loading={loadingWeather} 
+                loading={loadingWeather}
               />
             </div>
             <div className="space-y-8">
-              <FoodSuggestions 
-                weatherCondition={weatherData.current.condition.text} 
-                temperature={weatherData.current.temp_c} 
+              <FoodSuggestions
+                weatherCondition={weatherData.current.condition.text}
+                temperature={weatherData.current.temp_c}
                 loading={loadingWeather}
               />
-              <MedicalTips 
-                weatherCondition={weatherData.current.condition.text} 
-                temperature={weatherData.current.temp_c} 
+              <MedicalTips
+                weatherCondition={weatherData.current.condition.text}
+                temperature={weatherData.current.temp_c}
                 loading={loadingWeather}
               />
             </div>
           </div>
         )}
-        
-        {location && <NearbySheltersMap latitude={location.latitude} longitude={location.longitude} />}
+
+        {isClient && location && <NearbySheltersMap latitude={location.latitude} longitude={location.longitude} />}
 
       </main>
       <EmergencyButton />
