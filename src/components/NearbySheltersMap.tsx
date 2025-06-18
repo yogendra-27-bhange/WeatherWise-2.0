@@ -51,7 +51,8 @@ function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }
     if (map) {
       const currentCenter = map.getCenter();
       const currentZoom = map.getZoom();
-      const newCenterLatLng = L.latLng(center);
+      // Ensure 'center' is correctly formatted LatLng before comparison
+      const newCenterLatLng = L.latLng(center as L.LatLngTuple); // Cast if center is [number, number]
       if (currentZoom !== zoom || !currentCenter.equals(newCenterLatLng)) {
         map.setView(center, zoom);
       }
@@ -61,17 +62,21 @@ function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }
 }
 
 
+interface NearbySheltersMapProps {
+  latitude: number; // Guaranteed non-null by HomePage
+  longitude: number; // Guaranteed non-null by HomePage
+}
+
 export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProps) {
   const [places, setPlaces] = useState<Place[]>([]);
   const [loadingPois, setLoadingPois] = useState(false);
   const [poiError, setPoiError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const currentMapCenter = useMemo<LatLngExpression | null>(() => {
-    if (latitude && longitude) {
-      return [latitude, longitude];
-    }
-    return null;
+  // latitude and longitude are guaranteed to be numbers by HomePage's conditional render.
+  // So currentMapCenter will always be LatLngExpression.
+  const currentMapCenter = useMemo<LatLngExpression>(() => {
+    return [latitude, longitude];
   }, [latitude, longitude]);
 
   const fetchNearbyPlaces = useCallback(async (lat: number, lon: number) => {
@@ -124,9 +129,8 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   }, [toast]);
 
   useEffect(() => {
-    if (latitude && longitude) {
-      fetchNearbyPlaces(latitude, longitude);
-    }
+    // latitude and longitude are guaranteed non-null here
+    fetchNearbyPlaces(latitude, longitude);
   }, [latitude, longitude, fetchNearbyPlaces]);
 
 
@@ -161,20 +165,15 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
     );
   }), [places]);
 
-
-  if (!currentMapCenter) { // Should be handled by parent, but as a safeguard
-    return (
-      <SectionCard title="Nearby Facilities" icon={MapPinned}>
-        <p className="text-muted-foreground">Location not available. Please enable location services or enter a location manually.</p>
-      </SectionCard>
-    );
-  }
+  // The parent HomePage component ensures that latitude and longitude are valid numbers
+  // before rendering this component. Thus, currentMapCenter is always valid here,
+  // and the early return for null currentMapCenter is not needed.
 
   return (
     <SectionCard title="Nearby Facilities" icon={MapPinned} contentClassName="p-0 md:p-0">
       <div className="h-[400px] md:h-[500px] w-full rounded-b-lg overflow-hidden relative">
         <MapContainer
-            center={currentMapCenter}
+            center={currentMapCenter} 
             zoom={INITIAL_MAP_ZOOM}
             scrollWheelZoom={true}
             style={{height: '100%', width: '100%'}}
@@ -204,7 +203,7 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
         {poiError && !loadingPois && places.length === 0 && (
           <div className="absolute inset-x-0 top-0 p-4 bg-destructive/20 text-center z-10 rounded-t-lg">
             <p className="text-sm text-destructive font-medium whitespace-pre-line">{poiError}</p>
-            <Button onClick={() => latitude && longitude && fetchNearbyPlaces(latitude, longitude)} variant="outline" size="sm" className="mt-2 border-destructive text-destructive hover:bg-destructive/20">
+            <Button onClick={() => fetchNearbyPlaces(latitude, longitude)} variant="outline" size="sm" className="mt-2 border-destructive text-destructive hover:bg-destructive/20">
               Retry
             </Button>
           </div>
@@ -212,9 +211,4 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
       </div>
     </SectionCard>
   );
-}
-
-interface NearbySheltersMapProps {
-  latitude: number | null;
-  longitude: number | null;
 }
