@@ -1,5 +1,6 @@
+
 import type { LucideProps, LucideIcon } from 'lucide-react';
-import { Shirt, Wind, Umbrella, CloudSun, CloudSnow, Coffee, GlassWater, CookingPot, Utensils, HeartPulse, ThermometerIcon, Activity, Siren, Cloudy, Sun, Snowflake, Zap, HelpCircle } from 'lucide-react';
+import { Shirt, Wind, Umbrella, CloudSun, CloudSnow, Coffee, GlassWater, CookingPot, Utensils, HeartPulse, ThermometerIcon, Activity, Siren, Cloudy, Sun, Snowflake, Zap, HelpCircle, Home as HomeIcon } from 'lucide-react';
 
 export interface Suggestion {
   item: string;
@@ -107,7 +108,7 @@ export const getMedicalTips = (condition: string, tempC: number): MedicalTip[] =
   if (tempC < 10 || lowerCondition.includes("snow") || lowerCondition.includes("cold")) {
     tips.push({ tip: "Keep warm to avoid hypothermia. Dress in layers.", icon: Snowflake, category: 'Cold Weather' });
     tips.push({ tip: "Be cautious of icy surfaces to prevent falls.", icon: Activity, category: 'Cold Weather' });
-    tips.push({ tip: "Ensure indoor heating is safe and well-ventilated.", icon: HomeIcon, category: 'Cold Weather' }); // HomeIcon is not defined, will use Siren for now
+    tips.push({ tip: "Ensure indoor heating is safe and well-ventilated.", icon: HomeIcon, category: 'Cold Weather' }); // HomeIcon is now defined
   }
   
   if (lowerCondition.includes("rain") || lowerCondition.includes("humidity") || tempC < 15) {
@@ -126,5 +127,6 @@ export const getMedicalTips = (condition: string, tempC: number): MedicalTip[] =
   return tips.map(tip => tip.icon === HomeIcon ? {...tip, icon: Siren} : tip).slice(0,4);
 };
 
-export { Shirt, Wind, Umbrella, CloudSun, CloudSnow, Coffee, GlassWater, CookingPot, Utensils, HeartPulse, ThermometerIcon as Thermometer, Activity, Siren, Cloudy, Sun, Snowflake, Zap, HelpCircle as QuestionMark };
+export { Shirt, Wind, Umbrella, CloudSun, CloudSnow, Coffee, GlassWater, CookingPot, Utensils, HeartPulse, ThermometerIcon as Thermometer, Activity, Siren, Cloudy, Sun, Snowflake, Zap, HelpCircle as QuestionMark, HomeIcon };
 export const WeatherIcon = getIconByWeatherCondition;
+
