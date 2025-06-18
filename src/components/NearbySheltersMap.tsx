@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -6,8 +7,7 @@ import L, { type LatLngExpression } from 'leaflet';
 import ReactDOMServer from 'react-dom/server';
 import type { MapboxGeocodingResponse, MapboxFeature, Place } from '@/types/mapbox';
 import { SectionCard } from "./SectionCard";
-import { MapPinned, Hospital, Shield, HomeIcon as ShelterIcon, MapIcon, LucideIcon } from 'lucide-react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { MapPinned, Hospital, Shield, HomeIcon as ShelterIcon, MapIcon, LucideIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 
@@ -53,7 +53,10 @@ const userLocationIcon = L.divIcon({
 function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, zoom);
+    // Only call setView if the map instance is available and center/zoom actually changed
+    if (map && (map.getZoom() !== zoom || !map.getCenter().equals(L.latLng(center)))) {
+      map.setView(center, zoom);
+    }
   }, [center, zoom, map]);
   return null;
 }
@@ -61,23 +64,14 @@ function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }
 
 export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProps) {
   const [places, setPlaces] = useState<Place[]>([]);
-  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const [, setSelectedPlace] = useState<Place | null>(null); // Keep for potential future use, not directly for popup control now
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   
-  const [mapCenter, setMapCenter] = useState<LatLngExpression>(
-    latitude && longitude ? [latitude, longitude] : [37.7749, -122.4194] // Default to SF
-  );
+  // These states are for the ChangeView component to react to prop changes
+  const [mapCenter, setMapCenter] = useState<LatLngExpression>(() => latitude && longitude ? [latitude, longitude] : [0,0]);
   const [mapZoom, setMapZoom] = useState(12);
-
-  useEffect(() => {
-    if (latitude && longitude) {
-      setMapCenter([latitude, longitude]);
-      setMapZoom(12);
-      fetchNearbyPlaces(latitude, longitude);
-    }
-  }, [latitude, longitude]);
 
   const fetchNearbyPlaces = useCallback(async (lat: number, lon: number) => {
     if (!MAPBOX_TOKEN) {
@@ -99,6 +93,8 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
         if (!response.ok) {
             const errorData = await response.json();
             console.error(`Mapbox API error for ${category}:`, errorData.message || response.statusText);
+            // Don't throw here, try to get other categories
+            setError(prevError => prevError ? `${prevError}\nCould not fetch ${category}.` : `Could not fetch ${category}.`);
             continue; 
         }
         const data: MapboxGeocodingResponse = await response.json();
@@ -112,6 +108,9 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
         allPlaces = [...allPlaces, ...categoryPlaces];
       }
       setPlaces(allPlaces);
+      if (allPlaces.length === 0 && !error) { // if no places found but no API error occurred.
+        setError("No nearby facilities found for the selected categories.");
+      }
     } catch (err: any) {
       console.error("Error fetching nearby places:", err);
       setError("Failed to fetch nearby places.");
@@ -119,13 +118,21 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, error]); // Added error to dependency array of fetchNearbyPlaces
+
+  useEffect(() => {
+    if (latitude && longitude) {
+      setMapCenter([latitude, longitude]);
+      setMapZoom(12); // Reset zoom or adjust as needed when location changes
+      fetchNearbyPlaces(latitude, longitude);
+    }
+  }, [latitude, longitude, fetchNearbyPlaces]);
+
 
   const poiMarkers = useMemo(() => places.map(place => {
     const CategoryIcon = POI_CATEGORIES[place.type].icon;
     const color = POI_CATEGORIES[place.type].color;
     const icon = createLeafletIcon(CategoryIcon, color);
-    // Leaflet uses [lat, lon]
     const position: LatLngExpression = [place.coordinates[1], place.coordinates[0]]; 
     
     return (
@@ -135,10 +142,7 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
         icon={icon}
         eventHandlers={{
           click: () => {
-            setSelectedPlace(place);
-            // Optionally, fly to the marker
-            // const map = (document.querySelector('.leaflet-container') as any)?._leaflet_map;
-            // if (map) map.flyTo(position, map.getZoom());
+            setSelectedPlace(place); // Set for potential external use
           },
         }}
       >
@@ -163,26 +167,11 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
 
 
   if (!latitude || !longitude) {
+    // This case is handled by the dynamic import's loading if page.tsx calls it when lat/lon are null.
+    // However, if called directly with null lat/lon, this is a fallback.
     return (
       <SectionCard title="Nearby Facilities" icon={MapPinned}>
         <p className="text-muted-foreground">Location not available. Please enable location services or enter a location manually.</p>
-      </SectionCard>
-    );
-  }
-
-  if (loading && places.length === 0) { // Show skeleton only on initial load
-    return (
-      <SectionCard title="Nearby Facilities" icon={MapPinned}>
-        <Skeleton className="h-[400px] w-full rounded-md" />
-      </SectionCard>
-    );
-  }
-  
-  if (error && places.length === 0) { // Show error only if no places could be fetched
-     return (
-      <SectionCard title="Nearby Facilities" icon={MapPinned}>
-        <p className="text-destructive">{error}</p>
-        <Button onClick={() => fetchNearbyPlaces(latitude, longitude)} variant="outline" className="mt-2">Retry</Button>
       </SectionCard>
     );
   }
@@ -191,11 +180,14 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
     <SectionCard title="Nearby Facilities" icon={MapPinned} contentClassName="p-0 md:p-0">
       <div className="h-[400px] md:h-[500px] w-full rounded-b-lg overflow-hidden relative">
         <MapContainer 
-            center={mapCenter} 
-            zoom={mapZoom} 
+            center={mapCenter} // Use state that's updated by useEffect based on props
+            zoom={mapZoom}     // Use state that's updated by useEffect
             scrollWheelZoom={true} 
             style={{height: '100%', width: '100%'}}
             className="rounded-b-lg"
+            // Adding a key ensures that if lat/lon fundamentally change, Leaflet reinitializes cleanly.
+            // This is often a good pattern for components managing heavy external libraries.
+            key={`${latitude}-${longitude}`} 
         >
           <ChangeView center={mapCenter} zoom={mapZoom} />
           <TileLayer
@@ -205,32 +197,31 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
           
           {poiMarkers}
 
-          <Marker position={[latitude, longitude]} icon={userLocationIcon} />
-
-          {selectedPlace && (
-             <Popup 
-                position={[selectedPlace.coordinates[1], selectedPlace.coordinates[0]]}
-                onClose={() => setSelectedPlace(null)}
-              >
-              <div className="p-1 max-w-xs font-body">
-                <h3 className="font-headline text-md font-semibold text-primary mb-1">{selectedPlace.name}</h3>
-                <p className="text-xs text-muted-foreground mb-1">{POI_CATEGORIES[selectedPlace.type].name}</p>
-                {selectedPlace.address && <p className="text-xs">{selectedPlace.address}</p>}
-                <Button 
-                  variant="link" 
-                  size="sm" 
-                  className="p-0 h-auto text-xs mt-1"
-                  onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${selectedPlace.coordinates[1]},${selectedPlace.coordinates[0]}`, "_blank")}
-                >
-                  Get Directions
-                </Button>
-              </div>
-            </Popup>
-          )}
+          <Marker position={[latitude, longitude]} icon={userLocationIcon}>
+            <Popup>Your current location</Popup>
+          </Marker>
 
         </MapContainer>
-        {loading && <div className="absolute top-2 right-2 bg-background/80 p-2 rounded-md shadow-md"><Skeleton className="h-5 w-20" /></div>}
+        
+        {/* Loading indicator for POIs, shown as an overlay */}
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm z-10">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-2 text-muted-foreground">Loading facilities...</p>
+          </div>
+        )}
+
+        {/* Error display for POIs, shown as an overlay */}
+        {error && !loading && places.length === 0 && ( // Show error only if not loading AND no places are shown
+          <div className="absolute inset-x-0 top-0 p-4 bg-destructive/20 text-center z-10">
+            <p className="text-sm text-destructive font-medium">{error}</p>
+            <Button onClick={() => fetchNearbyPlaces(latitude, longitude)} variant="outline" size="sm" className="mt-2 border-destructive text-destructive hover:bg-destructive/20">
+              Retry
+            </Button>
+          </div>
+        )}
       </div>
     </SectionCard>
   );
 }
+
