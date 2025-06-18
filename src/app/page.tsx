@@ -11,6 +11,7 @@ import { ClothingSuggestions } from '@/components/ClothingSuggestions';
 import { FoodSuggestions } from '@/components/FoodSuggestions';
 import { MedicalTips } from '@/components/MedicalTips';
 import { EmergencyButton } from '@/components/EmergencyButton';
+import { WeatherSummary } from '@/components/WeatherSummary'; // Added
 import { Loader2, AlertTriangle, Search, LocateFixed, Sun, MapPinned } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
@@ -174,6 +175,8 @@ export default function HomePage() {
         )}
 
         <WeatherDisplay weatherData={weatherData} loading={loadingWeather || (loadingLocation && !weatherData)} />
+        
+        <WeatherSummary weatherData={weatherData} loadingWeather={loadingWeather || (loadingLocation && !weatherData)} />
 
         {weatherData && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

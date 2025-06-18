@@ -1,3 +1,4 @@
+
 # Weatherwise 2.0
 
 This is a Next.js application called Weatherwise 2.0, an intelligent weather companion.
@@ -5,6 +6,7 @@ This is a Next.js application called Weatherwise 2.0, an intelligent weather com
 ## Features
 
 - **Weather Display**: Shows current weather and forecast.
+- **AI Weather Summary**: Provides a conversational summary of the current weather using Genkit.
 - **Mood-Based Music**: Recommends music from YouTube based on weather, using AI to refine search queries.
 - **Clothing Suggestion**: Suggests appropriate attire.
 - **Food Suggestion**: Recommends seasonal food and drinks.
@@ -50,4 +52,5 @@ pnpm dev
 Open [http://localhost:9002](http://localhost:9002) (or your configured port) with your browser to see the result.
 
 The main application page is located at `src/app/page.tsx`.
-AI flows, such as music query generation, are in `src/ai/flows/`.
+AI flows, such as music query generation and weather summary, are in `src/ai/flows/`.
+
