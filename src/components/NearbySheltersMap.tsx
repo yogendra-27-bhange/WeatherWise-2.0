@@ -12,11 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
-
-interface NearbySheltersMapProps {
-  latitude: number | null;
-  longitude: number | null;
-}
+const INITIAL_MAP_ZOOM = 12;
 
 const POI_CATEGORIES = {
   hospital: { name: 'Hospitals', icon: Hospital, color: '#E91E63' }, // Pink
@@ -32,10 +28,10 @@ const createLeafletIcon = (IconComponent: LucideIcon, color: string, size: numbe
   );
   return L.divIcon({
     html: iconHtml,
-    className: 'leaflet-custom-div-icon', 
+    className: 'leaflet-custom-div-icon',
     iconSize: [size, size],
-    iconAnchor: [size / 2, size], 
-    popupAnchor: [0, -size] 
+    iconAnchor: [size / 2, size],
+    popupAnchor: [0, -size]
   });
 };
 
@@ -49,14 +45,14 @@ const userLocationIcon = L.divIcon({
   popupAnchor: [0, -32]
 });
 
-// Component to handle map view changes
 function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    if (map) { 
+    if (map) {
       const currentCenter = map.getCenter();
       const currentZoom = map.getZoom();
-      if (currentZoom !== zoom || !currentCenter.equals(L.latLng(center))) {
+      const newCenterLatLng = L.latLng(center);
+      if (currentZoom !== zoom || !currentCenter.equals(newCenterLatLng)) {
         map.setView(center, zoom);
       }
     }
@@ -70,9 +66,13 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   const [loadingPois, setLoadingPois] = useState(false);
   const [poiError, setPoiError] = useState<string | null>(null);
   const { toast } = useToast();
-  
-  const [mapCenter, setMapCenter] = useState<LatLngExpression>(() => latitude && longitude ? [latitude, longitude] : [0,0]);
-  const [mapZoom, setMapZoom] = useState(12);
+
+  const currentMapCenter = useMemo<LatLngExpression | null>(() => {
+    if (latitude && longitude) {
+      return [latitude, longitude];
+    }
+    return null;
+  }, [latitude, longitude]);
 
   const fetchNearbyPlaces = useCallback(async (lat: number, lon: number) => {
     if (!MAPBOX_TOKEN) {
@@ -98,20 +98,20 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
                 const newErrorMessage = `Could not fetch ${category}.`;
                 return prevError ? `${prevError}\n${newErrorMessage}` : newErrorMessage;
             });
-            continue; 
+            continue;
         }
         const data: MapboxGeocodingResponse = await response.json();
         const categoryPlaces: Place[] = data.features.map((feature: MapboxFeature) => ({
           id: feature.id,
           name: feature.text,
-          coordinates: feature.center as [number, number], // [lon, lat]
+          coordinates: feature.center as [number, number],
           type: category,
           address: feature.place_name,
         }));
         allPlaces = [...allPlaces, ...categoryPlaces];
       }
       setPlaces(allPlaces);
-      if (allPlaces.length === 0 && !poiError) { 
+      if (allPlaces.length === 0 && !poiError) {
         setPoiError("No nearby facilities found for the selected categories.");
       }
     } catch (err: any) {
@@ -121,12 +121,10 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
     } finally {
       setLoadingPois(false);
     }
-  }, [toast]); 
+  }, [toast]);
 
   useEffect(() => {
     if (latitude && longitude) {
-      setMapCenter([latitude, longitude]);
-      setMapZoom(12); 
       fetchNearbyPlaces(latitude, longitude);
     }
   }, [latitude, longitude, fetchNearbyPlaces]);
@@ -136,8 +134,8 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
     const CategoryIcon = POI_CATEGORIES[place.type].icon;
     const color = POI_CATEGORIES[place.type].color;
     const icon = createLeafletIcon(CategoryIcon, color);
-    const position: LatLngExpression = [place.coordinates[1], place.coordinates[0]]; 
-    
+    const position: LatLngExpression = [place.coordinates[1], place.coordinates[0]];
+
     return (
       <Marker
         key={place.id}
@@ -149,9 +147,9 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
             <h3 className="font-headline text-md font-semibold text-primary mb-1">{place.name}</h3>
             <p className="text-xs text-muted-foreground mb-1">{POI_CATEGORIES[place.type].name}</p>
             {place.address && <p className="text-xs">{place.address}</p>}
-            <Button 
-              variant="link" 
-              size="sm" 
+            <Button
+              variant="link"
+              size="sm"
               className="p-0 h-auto text-xs mt-1"
               onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${place.coordinates[1]},${place.coordinates[0]}`, "_blank")}
             >
@@ -164,7 +162,7 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   }), [places]);
 
 
-  if (!latitude || !longitude) {
+  if (!currentMapCenter) { // Should be handled by parent, but as a safeguard
     return (
       <SectionCard title="Nearby Facilities" icon={MapPinned}>
         <p className="text-muted-foreground">Location not available. Please enable location services or enter a location manually.</p>
@@ -175,27 +173,27 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   return (
     <SectionCard title="Nearby Facilities" icon={MapPinned} contentClassName="p-0 md:p-0">
       <div className="h-[400px] md:h-[500px] w-full rounded-b-lg overflow-hidden relative">
-        <MapContainer 
-            center={mapCenter} 
-            zoom={mapZoom}     
-            scrollWheelZoom={true} 
+        <MapContainer
+            center={currentMapCenter}
+            zoom={INITIAL_MAP_ZOOM}
+            scrollWheelZoom={true}
             style={{height: '100%', width: '100%'}}
             className="rounded-b-lg"
         >
-          <ChangeView center={mapCenter} zoom={mapZoom} />
+          <ChangeView center={currentMapCenter} zoom={INITIAL_MAP_ZOOM} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          
+
           {poiMarkers}
 
-          <Marker position={[latitude, longitude]} icon={userLocationIcon}>
+          <Marker position={currentMapCenter} icon={userLocationIcon}>
             <Popup>Your current location</Popup>
           </Marker>
 
         </MapContainer>
-        
+
         {loadingPois && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm z-10">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -203,10 +201,10 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
           </div>
         )}
 
-        {poiError && !loadingPois && places.length === 0 && ( 
+        {poiError && !loadingPois && places.length === 0 && (
           <div className="absolute inset-x-0 top-0 p-4 bg-destructive/20 text-center z-10 rounded-t-lg">
-            <p className="text-sm text-destructive font-medium">{poiError}</p>
-            <Button onClick={() => fetchNearbyPlaces(latitude, longitude)} variant="outline" size="sm" className="mt-2 border-destructive text-destructive hover:bg-destructive/20">
+            <p className="text-sm text-destructive font-medium whitespace-pre-line">{poiError}</p>
+            <Button onClick={() => latitude && longitude && fetchNearbyPlaces(latitude, longitude)} variant="outline" size="sm" className="mt-2 border-destructive text-destructive hover:bg-destructive/20">
               Retry
             </Button>
           </div>
@@ -214,4 +212,9 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
       </div>
     </SectionCard>
   );
+}
+
+interface NearbySheltersMapProps {
+  latitude: number | null;
+  longitude: number | null;
 }
