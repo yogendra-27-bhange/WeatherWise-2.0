@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L, { type LatLngExpression } from 'leaflet';
+import L, { type LatLngExpression, type Map as LeafletMap } from 'leaflet';
 import ReactDOMServer from 'react-dom/server';
 import type { MapboxGeocodingResponse, MapboxFeature, Place } from '@/types/mapbox';
 import { SectionCard } from "./SectionCard";
@@ -51,9 +51,11 @@ function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }
     if (map) {
       const currentCenter = map.getCenter();
       const currentZoom = map.getZoom();
-      // Ensure 'center' is correctly formatted LatLng before comparison
-      const newCenterLatLng = L.latLng(center as L.LatLngTuple); // Cast if center is [number, number]
-      if (currentZoom !== zoom || !currentCenter.equals(newCenterLatLng)) {
+      const newCenterLatLng = L.latLng(center as L.LatLngTuple);
+      
+      // Check if center or zoom actually changed to avoid redundant setView calls
+      // Added a small tolerance for LatLng comparison
+      if (currentZoom !== zoom || !currentCenter.equals(newCenterLatLng, 0.00001)) {
         map.setView(center, zoom);
       }
     }
@@ -63,8 +65,8 @@ function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }
 
 
 interface NearbySheltersMapProps {
-  latitude: number; // Guaranteed non-null by HomePage
-  longitude: number; // Guaranteed non-null by HomePage
+  latitude: number;
+  longitude: number;
 }
 
 export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProps) {
@@ -72,12 +74,20 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   const [loadingPois, setLoadingPois] = useState(false);
   const [poiError, setPoiError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [mapInstance, setMapInstance] = useState<LeafletMap | null>(null);
 
-  // latitude and longitude are guaranteed to be numbers by HomePage's conditional render.
-  // So currentMapCenter will always be LatLngExpression.
   const currentMapCenter = useMemo<LatLngExpression>(() => {
     return [latitude, longitude];
   }, [latitude, longitude]);
+
+  useEffect(() => {
+    // Cleanup function to remove map instance if component unmounts
+    return () => {
+      if (mapInstance) {
+        mapInstance.remove();
+      }
+    };
+  }, [mapInstance]);
 
   const fetchNearbyPlaces = useCallback(async (lat: number, lon: number) => {
     if (!MAPBOX_TOKEN) {
@@ -119,7 +129,7 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
       if (allPlaces.length === 0 && !poiError) {
         setPoiError("No nearby facilities found for the selected categories.");
       }
-    } catch (err: any) {
+    } catch (err: any)      {
       console.error("Error fetching nearby places:", err);
       setPoiError("Failed to fetch nearby places.");
       toast({variant: "destructive", title: "Map Data Error", description: "Could not load points of interest."});
@@ -129,7 +139,6 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   }, [toast]);
 
   useEffect(() => {
-    // latitude and longitude are guaranteed non-null here
     fetchNearbyPlaces(latitude, longitude);
   }, [latitude, longitude, fetchNearbyPlaces]);
 
@@ -165,19 +174,17 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
     );
   }), [places]);
 
-  // The parent HomePage component ensures that latitude and longitude are valid numbers
-  // before rendering this component. Thus, currentMapCenter is always valid here,
-  // and the early return for null currentMapCenter is not needed.
 
   return (
     <SectionCard title="Nearby Facilities" icon={MapPinned} contentClassName="p-0 md:p-0">
       <div className="h-[400px] md:h-[500px] w-full rounded-b-lg overflow-hidden relative">
         <MapContainer
-            center={currentMapCenter} 
+            center={currentMapCenter}
             zoom={INITIAL_MAP_ZOOM}
             scrollWheelZoom={true}
             style={{height: '100%', width: '100%'}}
             className="rounded-b-lg"
+            whenCreated={setMapInstance}
         >
           <ChangeView center={currentMapCenter} zoom={INITIAL_MAP_ZOOM} />
           <TileLayer
