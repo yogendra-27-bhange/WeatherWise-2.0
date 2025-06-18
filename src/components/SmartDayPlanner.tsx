@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { WeatherAPIResponse } from "@/types/weather";
 import { generateDayPlanAdvice, type GenerateDayPlanAdviceInput } from '@/ai/flows/generate-day-plan-advice';
 import { SectionCard } from "./SectionCard";
@@ -64,11 +65,12 @@ export function SmartDayPlanner({ weatherData, loadingWeather, onPlanMyDayClick,
 
   // Fetch advice automatically if showAdvice is true and weather data is available
   // This is triggered by the "Plan My Day" button in the parent
-  useState(() => {
-    if (showAdvice && weatherData && !loadingWeather) {
-      fetchAdvice();
-    }
-  });
+  // This useEffect was removed in a previous step as it was combined, re-evaluating its necessity.
+  // useEffect(() => {
+  //   if (showAdvice && weatherData && !loadingWeather) {
+  //     fetchAdvice();
+  //   }
+  // });
 
    // Re-fetch if showAdvice becomes true and data is ready
   useEffect(() => {

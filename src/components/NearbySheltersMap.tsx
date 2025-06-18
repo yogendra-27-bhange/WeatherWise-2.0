@@ -71,25 +71,24 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   const [places, setPlaces] = useState<Place[]>([]);
   const [loadingPois, setLoadingPois] = useState(false);
   const [poiError, setPoiError] = useState<string | null>(null);
-  const { toast } = useToast();
   const mapInstanceRef = useRef<LeafletMap | null>(null);
+  const { toast } = useToast();
+  const [isMapReadyForRender, setIsMapReadyForRender] = useState(false);
 
   const currentMapCenter = useMemo<LatLngExpression>(() => {
     return [latitude, longitude];
   }, [latitude, longitude]);
 
   useEffect(() => {
-    // This effect runs once on mount and its cleanup runs once on unmount.
-    // The map instance is set by `whenCreated` callback of MapContainer.
+    setIsMapReadyForRender(true); // Signal that the component has mounted client-side
+    
     return () => {
-      // Access the map instance from the ref at the time of cleanup.
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
-        mapInstanceRef.current = null; // Clean up the ref
+        mapInstanceRef.current = null;
       }
     };
-  }, []); // Empty dependency array ensures this effect runs once on mount and cleans up on unmount.
-
+  }, []); 
 
   const fetchNearbyPlaces = useCallback(async (lat: number, lon: number) => {
     if (!MAPBOX_TOKEN) {
@@ -141,7 +140,9 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   }, [toast]);
 
   useEffect(() => {
-    fetchNearbyPlaces(latitude, longitude);
+    if (latitude && longitude) { // Ensure lat/lon are valid before fetching
+      fetchNearbyPlaces(latitude, longitude);
+    }
   }, [latitude, longitude, fetchNearbyPlaces]);
 
 
@@ -180,27 +181,33 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   return (
     <SectionCard title="Nearby Facilities" icon={MapPinned} contentClassName="p-0 md:p-0">
       <div className="h-[400px] md:h-[500px] w-full rounded-b-lg overflow-hidden relative">
-        <MapContainer
-            center={currentMapCenter}
-            zoom={INITIAL_MAP_ZOOM}
-            scrollWheelZoom={true}
-            style={{height: '100%', width: '100%'}}
-            className="rounded-b-lg"
-            whenCreated={(map) => { mapInstanceRef.current = map; }}
-        >
-          <ChangeView center={currentMapCenter} zoom={INITIAL_MAP_ZOOM} />
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+        {isMapReadyForRender ? (
+          <MapContainer
+              center={currentMapCenter}
+              zoom={INITIAL_MAP_ZOOM}
+              scrollWheelZoom={true}
+              style={{height: '100%', width: '100%'}}
+              className="rounded-b-lg"
+              whenCreated={(map) => { mapInstanceRef.current = map; }}
+          >
+            <ChangeView center={currentMapCenter} zoom={INITIAL_MAP_ZOOM} />
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
 
-          {poiMarkers}
+            {poiMarkers}
 
-          <Marker position={currentMapCenter} icon={userLocationIcon}>
-            <Popup>Your current location</Popup>
-          </Marker>
-
-        </MapContainer>
+            <Marker position={currentMapCenter} icon={userLocationIcon}>
+              <Popup>Your current location</Popup>
+            </Marker>
+          </MapContainer>
+        ) : (
+          <div className="flex items-center justify-center h-full w-full bg-background/50">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-2 text-muted-foreground">Initializing map...</p>
+          </div>
+        )}
 
         {loadingPois && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm z-10">
@@ -221,4 +228,3 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
     </SectionCard>
   );
 }
-
