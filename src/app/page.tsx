@@ -9,12 +9,31 @@ import { MusicRecommendations } from '@/components/MusicRecommendations';
 import { ClothingSuggestions } from '@/components/ClothingSuggestions';
 import { FoodSuggestions } from '@/components/FoodSuggestions';
 import { MedicalTips } from '@/components/MedicalTips';
-import { NearbySheltersMap } from '@/components/NearbySheltersMap';
+// import { NearbySheltersMap } from '@/components/NearbySheltersMap'; // Original import
 import { EmergencyButton } from '@/components/EmergencyButton';
-import { Loader2, AlertTriangle, Search, LocateFixed, Sun } from 'lucide-react';
+import { Loader2, AlertTriangle, Search, LocateFixed, Sun, MapPinned } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+import { SectionCard } from '@/components/SectionCard';
+
 
 const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
+
+// Dynamically import NearbySheltersMap with SSR disabled
+const NearbySheltersMap = dynamic(
+  () => import('@/components/NearbySheltersMap').then(mod => mod.NearbySheltersMap),
+  { 
+    ssr: false,
+    loading: () => (
+      <SectionCard title="Nearby Facilities" icon={MapPinned}>
+        <Skeleton className="h-[400px] w-full rounded-md" />
+        <p className="text-center text-muted-foreground mt-2">Loading map...</p>
+      </SectionCard>
+    )
+  }
+);
+
 
 export default function HomePage() {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
