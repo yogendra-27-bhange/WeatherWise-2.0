@@ -93,3 +93,37 @@ body {
     @apply font-headline;
   }
 }
+
+/* Leaflet custom divIcon base style (optional, as anchors handle positioning) */
+.leaflet-custom-div-icon {
+  background-color: transparent !important;
+  border: none !important;
+}
+.leaflet-user-location-icon {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+/* Style Leaflet popups to match ShadCN Card */
+.leaflet-popup-content-wrapper {
+  @apply bg-popover text-popover-foreground rounded-lg shadow-md border-border;
+  padding: 1px; /* To make inner content padding work better */
+}
+
+.leaflet-popup-content {
+  @apply text-sm;
+  margin: 0.75rem; /* Equivalent to p-3 from ShadCN CardContent */
+  line-height: 1.4;
+}
+
+.leaflet-popup-tip-container {
+  /* Optional: hide or style the tip if it doesn't align well with ShadCN style */
+}
+
+.leaflet-popup-close-button {
+  @apply text-popover-foreground/70 hover:text-popover-foreground;
+  padding: 0.25rem; /* Adjust padding for better click area */
+  font-size: 1.25rem; /* Make X larger */
+  top: 0.25rem;
+  right: 0.25rem;
+}

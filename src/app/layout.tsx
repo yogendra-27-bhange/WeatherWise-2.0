@@ -1,7 +1,7 @@
 import type {Metadata} from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
 import './globals.css';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import 'leaflet/dist/leaflet.css';
 import { Toaster } from "@/components/ui/toaster";
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
