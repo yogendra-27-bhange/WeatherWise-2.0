@@ -22,7 +22,7 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#2563eb" />
-        <link rel="icon" type="image/png" href="/fevicon.png" />
+        <link rel="icon" type="image/x-icon" href="/logo.ico" />
         <link rel="apple-touch-icon" href="/fevicon.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
