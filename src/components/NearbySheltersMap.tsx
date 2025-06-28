@@ -10,7 +10,6 @@ import { MapPinned, Hospital, Shield, HomeIcon as ShelterIcon, MapIcon, LucideIc
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/hooks/use-toast";
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 const INITIAL_MAP_ZOOM = 12;
 
 const POI_CATEGORIES = {
@@ -80,35 +79,33 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   }, [latitude, longitude]);
 
   const fetchNearbyPlaces = useCallback(async (lat: number, lon: number) => {
-    if (!MAPBOX_TOKEN) {
-      setPoiError("Mapbox token not configured for POI data.");
-      toast({ variant: "destructive", title: "Map Data Error", description: "POI service is unavailable." });
-      setLoadingPois(false);
-      return;
-    }
     setLoadingPois(true);
     setPoiError(null);
     let allPlaces: Place[] = [];
 
+    // Overpass QL queries for each category
+    const overpassQueries: Record<PoiCategoryKey, string> = {
+      hospital: `node[amenity=hospital](around:3000,${lat},${lon});`,
+      police: `node[amenity=police](around:3000,${lat},${lon});`,
+      shelter: `node[amenity=shelter](around:3000,${lat},${lon});`,
+    };
+
     try {
       for (const category of Object.keys(POI_CATEGORIES) as PoiCategoryKey[]) {
-        const query = POI_CATEGORIES[category].name;
-        const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?proximity=${lon},${lat}&access_token=${MAPBOX_TOKEN}&limit=5&types=poi`
-        );
+        const query = overpassQueries[category];
+        const url = `https://overpass-api.de/api/interpreter?data=[out:json];(${query});out body;`;
+        const response = await fetch(url);
         if (!response.ok) {
-          const errorData = await response.json();
-          console.error(`Mapbox API error for ${category}:`, errorData.message || response.statusText);
           setPoiError(prev => `${prev ? prev + '\n' : ''}Could not fetch ${category}.`);
           continue;
         }
-        const data: MapboxGeocodingResponse = await response.json();
-        const categoryPlaces: Place[] = data.features.map((feature: MapboxFeature) => ({
-          id: feature.id,
-          name: feature.text,
-          coordinates: feature.center as [number, number],
+        const data = await response.json();
+        const categoryPlaces: Place[] = (data.elements || []).map((el: any) => ({
+          id: `${category}-${el.id}`,
+          name: el.tags?.name || POI_CATEGORIES[category].name,
+          coordinates: [el.lon, el.lat],
           type: category,
-          address: feature.place_name,
+          address: el.tags?.address || '',
         }));
         allPlaces = [...allPlaces, ...categoryPlaces];
       }

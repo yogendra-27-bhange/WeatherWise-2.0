@@ -1,4 +1,11 @@
-# 🌤️ WeatherWise 2.0
+# ��️ WeatherWise 2.0
+
+**Live Demo:** [https://weatherwise2-0.netlify.app/](https://weatherwise2-0.netlify.app/)
+
+## Recent Updates
+- **Mapbox removed:** All Mapbox and API key dependencies for maps and POI are removed.
+- **OpenStreetMap + Leaflet:** The app now uses OpenStreetMap and Leaflet for all map and location features—no API key required.
+- **Nearby Facilities:** Points of interest (hospitals, police, shelters) are fetched using the free OpenStreetMap Overpass API.
 
 Your intelligent weather companion powered by **MET Norway (Yr.no)** - the Norwegian Meteorological Institute's free weather API.
 
