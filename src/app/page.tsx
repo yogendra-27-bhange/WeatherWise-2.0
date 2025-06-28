@@ -25,6 +25,7 @@ import WeatherTrendsChart from '../components/WeatherTrendsChart';
 import DarkModeToggle from '../components/DarkModeToggle';
 import { getYrWeather } from '@/lib/yr-weather-service';
 import { geocodeLocation, reverseGeocode } from '@/lib/geocoding-service';
+import AIWeatherBot from "@/components/AIWeatherBot";
 
 // Remove the API key requirement since Yr.no is free
 // const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
@@ -55,6 +56,7 @@ export default function HomePage() {
   const [isClient, setIsClient] = useState(false);
   const [showDayPlanAdvice, setShowDayPlanAdvice] = useState(false);
   const [userStatus, setUserStatus] = useState<string>("Safe"); // For "Mark Me Safe" and QR
+  const [showSpecialMap, setShowSpecialMap] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -256,30 +258,46 @@ export default function HomePage() {
 
         {isClient && location && <NearbySheltersMap latitude={location.latitude} longitude={location.longitude} />}
 
-        {/* Placeholder Sections for Future Complex Features */}
-        <SectionCard title="Mark Me Safe & Volunteer Help" icon={ShieldCheck} className="opacity-50">
-          <p className="text-muted-foreground">This section will allow users to mark themselves as safe during emergencies and find/offer volunteer help. Requires Firebase backend integration.</p>
-          <div className="mt-4 flex gap-4">
-            <Button disabled><UserCheck className="mr-2"/> Mark Me Safe (Future)</Button>
-            <Button variant="outline" disabled><Stethoscope className="mr-2"/> Find/Offer Help (Future)</Button>
-          </div>
-          <p className="text-xs mt-2 text-muted-foreground italic">Note: User status ({userStatus}) is a placeholder for this feature.</p>
-        </SectionCard>
-        
-        <SectionCard title="More Features (Coming Soon)" icon={Route} className="opacity-50">
-            <ul className="list-disc list-inside text-muted-foreground space-y-2">
-                <li><CalendarClock className="inline mr-2 h-4 w-4"/>Weather-Based Reminder System (complex: needs storage & scheduling)</li>
-                <li><LinkIcon className="inline mr-2 h-4 w-4"/>Live Weather Cam Integration (optional: needs API for local cams)</li>
-                <li><Languages className="inline mr-2 h-4 w-4"/>Multi-Language Support (English, Hindi, Marathi - i18n setup)</li>
-                <li><Route className="inline mr-2 h-4 w-4"/>Route Safety Checker (complex: needs mapping & risk data)</li>
-                <li><Stethoscope className="inline mr-2 h-4 w-4"/>Hospital Queue Wait-Time Estimator (complex: needs data source)</li>
-                <li><MessageCircleQuestion className="inline mr-2 h-4 w-4"/>AI Weather Bot (complex: conversational AI flow)</li>
-            </ul>
+        {/* --- New Features Start --- */}
+        <SectionCard title="Weather-Based Reminder System" icon={CalendarClock}>
+          <form className="flex flex-col md:flex-row gap-2 items-center">
+            <Input type="text" placeholder="Enter reminder (e.g. Take umbrella if rain)" className="flex-grow" />
+            <Button type="submit">Set Reminder</Button>
+          </form>
+          <p className="text-xs text-muted-foreground mt-2">Reminders will be triggered based on weather conditions.</p>
         </SectionCard>
 
-        <OpenStreetMap />
-        <div style={{ marginTop: 32 }}>
-          <WeatherTrendsChart />
+        <SectionCard title="Multi-Language Support" icon={Languages}>
+          <div className="flex gap-4 items-center">
+            <Button variant="outline">English</Button>
+            <Button variant="outline">हिन्दी</Button>
+            <Button variant="outline">मराठी</Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">Switch app language. (Basic demo, full translation coming soon!)</p>
+        </SectionCard>
+
+        <SectionCard title="AI Weather Bot" icon={MessageCircleQuestion}>
+          <div className="flex flex-col gap-2">
+            <div className="bg-muted p-4 rounded-lg min-h-[80px]">AI Bot: Hello! Ask me anything about the weather.</div>
+            <form className="flex gap-2">
+              <Input type="text" placeholder="Type your weather question..." className="flex-grow" />
+              <Button type="submit">Send</Button>
+            </form>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">Conversational weather assistant (demo, AI integration coming soon).</p>
+        </SectionCard>
+        {/* --- New Features End --- */}
+
+        {/* Special Map Overlay Toggle */}
+        <div className="flex flex-col items-center my-8">
+          <Button onClick={() => setShowSpecialMap((v) => !v)}>
+            {showSpecialMap ? "Hide Special Map Overlay" : "Show Special Map Overlay"}
+          </Button>
+          {showSpecialMap && (
+            <div className="w-full mt-4">
+              <OpenStreetMap />
+            </div>
+          )}
         </div>
 
       </main>
@@ -289,6 +307,8 @@ export default function HomePage() {
           Weatherwise 2.0 &copy; {new Date().getFullYear()}. Weather data powered by <a href="https://www.met.no/en" title="Norwegian Meteorological Institute" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">MET Norway (Yr.no)</a>.
         </p>
       </footer>
+      {/* Floating AI Weather Bot */}
+      <AIWeatherBot />
     </div>
   );
 }

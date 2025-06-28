@@ -1,5 +1,6 @@
 "use client";
 
+import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -12,18 +13,14 @@ interface SectionCardProps {
   contentClassName?: string;
 }
 
-export function SectionCard({ title, icon: Icon, children, className, contentClassName }: SectionCardProps) {
+export function SectionCard({ title, icon: Icon, children, className = '', contentClassName }: SectionCardProps) {
   return (
-    <Card className={cn("shadow-lg w-full", className)}>
-      <CardHeader>
-        <CardTitle className="flex items-center text-xl md:text-2xl font-headline">
-          {Icon && <Icon className="mr-2 h-6 w-6 text-primary" />}
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className={cn("text-sm md:text-base", contentClassName)}>
-        {children}
-      </CardContent>
-    </Card>
+    <section className={`section-card animate-fade-in animate-slide-up ${className} p-6 mb-6 bg-white rounded-2xl shadow-lg border border-blue-100`}> 
+      <div className="flex items-center gap-3 mb-4">
+        {Icon && <Icon className="w-6 h-6 text-blue-400 animate-bounce-in" />}
+        <h2 className="text-xl font-bold text-blue-700">{title}</h2>
+      </div>
+      <div>{children}</div>
+    </section>
   );
 }
