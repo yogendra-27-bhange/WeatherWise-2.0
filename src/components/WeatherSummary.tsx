@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
-import type { WeatherAPIResponse } from "@/types/weather";
+import type { ConvertedWeatherAPIResponse } from "@/types/yr-weather";
 import { generateWeatherSummary, type GenerateWeatherSummaryInput } from '@/ai/flows/generate-weather-summary';
 import { SectionCard } from "./SectionCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,7 +9,7 @@ import { Sparkles, AlertTriangle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 interface WeatherSummaryProps {
-  weatherData: WeatherAPIResponse | null;
+  weatherData: ConvertedWeatherAPIResponse | null;
   loadingWeather: boolean;
 }
 

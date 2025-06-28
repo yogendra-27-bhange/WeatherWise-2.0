@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import type { WeatherAPIResponse } from '@/types/weather';
+import type { ConvertedWeatherAPIResponse } from '@/types/yr-weather';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { WeatherDisplay } from '@/components/WeatherDisplay';
@@ -22,10 +21,15 @@ import { useToast } from "@/hooks/use-toast";
 import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SectionCard } from '@/components/SectionCard';
+import WeatherTrendsChart from '../components/WeatherTrendsChart';
+import DarkModeToggle from '../components/DarkModeToggle';
+import { getYrWeather } from '@/lib/yr-weather-service';
+import { geocodeLocation, reverseGeocode } from '@/lib/geocoding-service';
 
+// Remove the API key requirement since Yr.no is free
+// const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
 
-const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
-
+const OpenStreetMap = dynamic(() => import('../components/OpenStreetMap'), { ssr: false });
 const NearbySheltersMap = dynamic(
   () => import('@/components/NearbySheltersMap').then(mod => mod.NearbySheltersMap),
   {
@@ -43,7 +47,7 @@ const NearbySheltersMap = dynamic(
 export default function HomePage() {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [manualLocationInput, setManualLocationInput] = useState('');
-  const [weatherData, setWeatherData] = useState<WeatherAPIResponse | null>(null);
+  const [weatherData, setWeatherData] = useState<ConvertedWeatherAPIResponse | null>(null);
   const [loadingLocation, setLoadingLocation] = useState(true);
   const [loadingWeather, setLoadingWeather] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,28 +75,45 @@ export default function HomePage() {
   }, [toast]);
 
   const fetchWeather = useCallback(async (query: string) => {
-    if (!WEATHER_API_KEY) {
-      setError("Weather API key not configured. Weather service unavailable.");
-      toast({ variant: "destructive", title: "API Key Missing", description: "Weather service cannot be reached."});
-      setLoadingWeather(false);
-      return;
-    }
     setLoadingWeather(true);
     setError(null);
     setShowDayPlanAdvice(false); // Reset advice visibility on new fetch
+    
     try {
-      const response = await fetch(
-        `https://api.weatherapi.com/v1/forecast.json?key=${WEATHER_API_KEY}&q=${query}&days=3`
-      );
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `Weather API request failed: ${response.statusText}`);
+      let lat: number, lon: number, locationName: string, country: string;
+      
+      // Check if query is coordinates
+      if (query.includes(',')) {
+        const [latStr, lonStr] = query.split(',').map(s => s.trim());
+        lat = parseFloat(latStr);
+        lon = parseFloat(lonStr);
+        
+        if (isNaN(lat) || isNaN(lon)) {
+          throw new Error('Invalid coordinates format. Use "latitude,longitude"');
+        }
+        
+        // Get location name from coordinates
+        const geoResult = await reverseGeocode(lat, lon);
+        locationName = geoResult?.name || 'Unknown Location';
+        country = geoResult?.country || 'Unknown';
+      } else {
+        // Geocode the location name to get coordinates
+        const geoResult = await geocodeLocation(query);
+        if (!geoResult) {
+          throw new Error(`Location "${query}" not found. Please try a different location.`);
+        }
+        
+        lat = geoResult.lat;
+        lon = geoResult.lon;
+        locationName = geoResult.name;
+        country = geoResult.country;
       }
-      const data: WeatherAPIResponse = await response.json();
+      
+      // Fetch weather data from Yr.no
+      const data = await getYrWeather(lat, lon, locationName, country);
       setWeatherData(data);
-      if (data.location) {
-        setLocation({latitude: data.location.lat, longitude: data.location.lon});
-      }
+      setLocation({ latitude: lat, longitude: lon });
+      
     } catch (err: any) {
       console.error("Error fetching weather data:", err);
       setError(err.message || "Failed to fetch weather data.");
@@ -133,7 +154,7 @@ export default function HomePage() {
       fetchWeather(manualLocationInput.trim());
     } else {
       setError("Please enter a location.");
-      toast({variant: "destructive", title: "Input Required", description: "Please enter a city name or zip code."});
+      toast({variant: "destructive", title: "Input Required", description: "Please enter a city name or coordinates."});
     }
   };
 
@@ -145,6 +166,9 @@ export default function HomePage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center p-4 md:p-8 relative">
       <OfflineSurvivalKit />
       <header className="w-full max-w-6xl mb-8 text-center">
+        <div className="flex justify-end w-full mb-2">
+          <DarkModeToggle />
+        </div>
         <h1 className="text-4xl md:text-5xl font-bold text-primary flex items-center justify-center">
           <Sun className="w-10 h-10 md:w-12 md:w-12 mr-3 animate-spin [animation-duration:10s]" /> Weatherwise 2.0
         </h1>
@@ -176,7 +200,7 @@ export default function HomePage() {
               type="text"
               value={manualLocationInput}
               onChange={(e) => setManualLocationInput(e.target.value)}
-              placeholder="Enter city, zip code, or lat,lon"
+              placeholder="Enter city name or coordinates (lat,lon)"
               aria-label="Enter location"
               className="flex-grow text-base"
             />
@@ -202,7 +226,7 @@ export default function HomePage() {
 
         <WeatherStory weatherData={weatherData} loadingWeather={loadingWeather || (loadingLocation && !weatherData)} />
         
-        <AirQualityAlerts latitude={location?.latitude} longitude={location?.longitude} />
+        <AirQualityAlerts latitude={location?.latitude ?? null} longitude={location?.longitude ?? null} />
 
 
         {weatherData && (
@@ -253,12 +277,16 @@ export default function HomePage() {
             </ul>
         </SectionCard>
 
+        <OpenStreetMap />
+        <div style={{ marginTop: 32 }}>
+          <WeatherTrendsChart />
+        </div>
 
       </main>
-      <EmergencyButton latitude={location?.latitude} longitude={location?.longitude} currentStatus={userStatus} />
+      <EmergencyButton latitude={location?.latitude ?? null} longitude={location?.longitude ?? null} currentStatus={userStatus} />
       <footer className="w-full max-w-6xl mt-12 pt-8 border-t border-primary/20 text-center">
         <p className="text-sm text-muted-foreground">
-          Weatherwise 2.0 &copy; {new Date().getFullYear()}. Weather data powered by <a href="https://www.weatherapi.com/" title="Free Weather API" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">WeatherAPI.com</a>.
+          Weatherwise 2.0 &copy; {new Date().getFullYear()}. Weather data powered by <a href="https://www.met.no/en" title="Norwegian Meteorological Institute" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">MET Norway (Yr.no)</a>.
         </p>
       </footer>
     </div>

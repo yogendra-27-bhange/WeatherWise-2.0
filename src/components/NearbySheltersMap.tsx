@@ -1,9 +1,8 @@
-
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L, { type LatLngExpression, type Map as LeafletMap } from 'leaflet';
+import L, { type LatLngExpression } from 'leaflet';
 import ReactDOMServer from 'react-dom/server';
 import type { MapboxGeocodingResponse, MapboxFeature, Place } from '@/types/mapbox';
 import { SectionCard } from "./SectionCard";
@@ -15,9 +14,9 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN;
 const INITIAL_MAP_ZOOM = 12;
 
 const POI_CATEGORIES = {
-  hospital: { name: 'Hospitals', icon: Hospital, color: '#E91E63' }, // Pink
-  police: { name: 'Police Stations', icon: Shield, color: '#2196F3' }, // Blue
-  shelter: { name: 'Shelters', icon: ShelterIcon, color: '#4CAF50' }, // Green
+  hospital: { name: 'Hospitals', icon: Hospital, color: '#E91E63' },
+  police: { name: 'Police Stations', icon: Shield, color: '#2196F3' },
+  shelter: { name: 'Shelters', icon: ShelterIcon, color: '#4CAF50' },
 };
 
 type PoiCategoryKey = keyof typeof POI_CATEGORIES;
@@ -48,19 +47,16 @@ const userLocationIcon = L.divIcon({
 function ChangeView({ center, zoom }: { center: LatLngExpression; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    if (map) {
-      const currentCenter = map.getCenter();
-      const currentZoom = map.getZoom();
-      const newCenterLatLng = L.latLng(center as L.LatLngTuple);
-      
-      if (currentZoom !== zoom || !currentCenter.equals(newCenterLatLng, 0.00001)) {
-        map.setView(center, zoom);
-      }
+    const currentCenter = map.getCenter();
+    const currentZoom = map.getZoom();
+    const newCenterLatLng = L.latLng(center as L.LatLngTuple);
+
+    if (currentZoom !== zoom || !currentCenter.equals(newCenterLatLng, 0.00001)) {
+      map.setView(center, zoom);
     }
   }, [center, zoom, map]);
   return null;
 }
-
 
 interface NearbySheltersMapProps {
   latitude: number;
@@ -71,29 +67,22 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
   const [places, setPlaces] = useState<Place[]>([]);
   const [loadingPois, setLoadingPois] = useState(false);
   const [poiError, setPoiError] = useState<string | null>(null);
-  const mapInstanceRef = useRef<LeafletMap | null>(null);
   const { toast } = useToast();
-  const [isMapReadyForRender, setIsMapReadyForRender] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
 
   const currentMapCenter = useMemo<LatLngExpression>(() => {
     return [latitude, longitude];
   }, [latitude, longitude]);
 
-  useEffect(() => {
-    setIsMapReadyForRender(true); // Signal that the component has mounted client-side
-    
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, []); 
-
   const fetchNearbyPlaces = useCallback(async (lat: number, lon: number) => {
     if (!MAPBOX_TOKEN) {
       setPoiError("Mapbox token not configured for POI data.");
-      toast({variant: "destructive", title:"Map Data Error", description: "POI service is unavailable."});
+      toast({ variant: "destructive", title: "Map Data Error", description: "POI service is unavailable." });
       setLoadingPois(false);
       return;
     }
@@ -108,13 +97,10 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
           `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?proximity=${lon},${lat}&access_token=${MAPBOX_TOKEN}&limit=5&types=poi`
         );
         if (!response.ok) {
-            const errorData = await response.json();
-            console.error(`Mapbox API error for ${category}:`, errorData.message || response.statusText);
-            setPoiError(prevError => {
-                const newErrorMessage = `Could not fetch ${category}.`;
-                return prevError ? `${prevError}\n${newErrorMessage}` : newErrorMessage;
-            });
-            continue;
+          const errorData = await response.json();
+          console.error(`Mapbox API error for ${category}:`, errorData.message || response.statusText);
+          setPoiError(prev => `${prev ? prev + '\n' : ''}Could not fetch ${category}.`);
+          continue;
         }
         const data: MapboxGeocodingResponse = await response.json();
         const categoryPlaces: Place[] = data.features.map((feature: MapboxFeature) => ({
@@ -130,21 +116,20 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
       if (allPlaces.length === 0 && !poiError) {
         setPoiError("No nearby facilities found for the selected categories.");
       }
-    } catch (err: any)      {
+    } catch (err) {
       console.error("Error fetching nearby places:", err);
       setPoiError("Failed to fetch nearby places.");
-      toast({variant: "destructive", title: "Map Data Error", description: "Could not load points of interest."});
+      toast({ variant: "destructive", title: "Map Data Error", description: "Could not load points of interest." });
     } finally {
       setLoadingPois(false);
     }
   }, [toast]);
 
   useEffect(() => {
-    if (latitude && longitude) { // Ensure lat/lon are valid before fetching
+    if (latitude && longitude) {
       fetchNearbyPlaces(latitude, longitude);
     }
   }, [latitude, longitude, fetchNearbyPlaces]);
-
 
   const poiMarkers = useMemo(() => places.map(place => {
     const CategoryIcon = POI_CATEGORIES[place.type].icon;
@@ -177,37 +162,30 @@ export function NearbySheltersMap({ latitude, longitude }: NearbySheltersMapProp
     );
   }), [places]);
 
+  if (!mounted) return null;
 
   return (
     <SectionCard title="Nearby Facilities" icon={MapPinned} contentClassName="p-0 md:p-0">
       <div className="h-[400px] md:h-[500px] w-full rounded-b-lg overflow-hidden relative">
-        {isMapReadyForRender ? (
-          <MapContainer
-              center={currentMapCenter}
-              zoom={INITIAL_MAP_ZOOM}
-              scrollWheelZoom={true}
-              style={{height: '100%', width: '100%'}}
-              className="rounded-b-lg"
-              whenCreated={(map) => { mapInstanceRef.current = map; }}
-          >
-            <ChangeView center={currentMapCenter} zoom={INITIAL_MAP_ZOOM} />
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+        <MapContainer
+          key={`leaflet-map-${latitude}-${longitude}`}
+          center={currentMapCenter}
+          zoom={INITIAL_MAP_ZOOM}
+          scrollWheelZoom={true}
+          style={{ height: '100%', width: '100%' }}
+          className="rounded-b-lg"
+        >
+          <ChangeView center={currentMapCenter} zoom={INITIAL_MAP_ZOOM} />
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {poiMarkers}
 
-            {poiMarkers}
-
-            <Marker position={currentMapCenter} icon={userLocationIcon}>
-              <Popup>Your current location</Popup>
-            </Marker>
-          </MapContainer>
-        ) : (
-          <div className="flex items-center justify-center h-full w-full bg-background/50">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="ml-2 text-muted-foreground">Initializing map...</p>
-          </div>
-        )}
+          <Marker position={currentMapCenter} icon={userLocationIcon}>
+            <Popup>Your current location</Popup>
+          </Marker>
+        </MapContainer>
 
         {loadingPois && (
           <div className="absolute inset-0 flex items-center justify-center bg-background/70 backdrop-blur-sm z-10">

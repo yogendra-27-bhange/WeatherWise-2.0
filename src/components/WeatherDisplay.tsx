@@ -1,6 +1,6 @@
 "use client";
 
-import type { WeatherAPIResponse } from "@/types/weather";
+import type { ConvertedWeatherAPIResponse } from "@/types/yr-weather";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton }
 from "@/components/ui/skeleton";
@@ -11,7 +11,7 @@ import { WeatherIcon } from '@/lib/suggestions';
 
 
 interface WeatherDisplayProps {
-  weatherData: WeatherAPIResponse | null;
+  weatherData: ConvertedWeatherAPIResponse | null;
   loading: boolean;
 }
 

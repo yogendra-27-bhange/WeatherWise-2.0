@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { BatteryWarning, ZapOff } from 'lucide-react';
-import type { WeatherAPIResponse } from '@/types/weather';
+import { Button } from "@/components/ui/button";
+import { Battery, X } from 'lucide-react';
+import type { ConvertedWeatherAPIResponse } from '@/types/yr-weather';
 
 interface BatteryManager extends EventTarget {
   charging: boolean;
@@ -21,7 +22,7 @@ interface NavigatorWithBattery extends Navigator {
 }
 
 interface BatterySaverAlertProps {
-  weatherData: WeatherAPIResponse | null;
+  weatherData: ConvertedWeatherAPIResponse | null;
 }
 
 const LOW_BATTERY_THRESHOLD = 0.20; // 20%
@@ -68,7 +69,7 @@ export function BatterySaverAlert({ weatherData }: BatterySaverAlertProps) {
 
   return (
     <Alert variant="destructive" className="my-4 animate-pulse">
-      <BatteryWarning className="h-5 w-5" />
+      <Battery className="h-5 w-5" />
       <AlertTitle>Low Battery & Potential Bad Weather!</AlertTitle>
       <AlertDescription>
         Your battery is at {batteryLevel !== null ? Math.round(batteryLevel * 100) : 'N/A'}%.

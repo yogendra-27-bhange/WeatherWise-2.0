@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from 'react';
-import type { WeatherAPIResponse } from "@/types/weather";
+import type { ConvertedWeatherAPIResponse } from "@/types/yr-weather";
 import { generateWeatherStory, type GenerateWeatherStoryInput } from '@/ai/flows/generate-weather-story';
 import { SectionCard } from "./SectionCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from './ui/button';
 
 interface WeatherStoryProps {
-  weatherData: WeatherAPIResponse | null;
+  weatherData: ConvertedWeatherAPIResponse | null;
   loadingWeather: boolean;
 }
 

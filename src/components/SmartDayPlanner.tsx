@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useState, useCallback, useEffect } from 'react';
-import type { WeatherAPIResponse } from "@/types/weather";
+import type { ConvertedWeatherAPIResponse } from "@/types/yr-weather";
 import { generateDayPlanAdvice, type GenerateDayPlanAdviceInput } from '@/ai/flows/generate-day-plan-advice';
 import { SectionCard } from "./SectionCard";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { Lightbulb, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 interface SmartDayPlannerProps {
-  weatherData: WeatherAPIResponse | null;
+  weatherData: ConvertedWeatherAPIResponse | null;
   loadingWeather: boolean;
   onPlanMyDayClick: () => void;
   showAdvice: boolean;

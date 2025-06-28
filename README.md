@@ -1,73 +1,178 @@
- (development just started).
+# 🌤️ WeatherWise 2.0
 
-# Weatherwise 2.0
+Your intelligent weather companion powered by **MET Norway (Yr.no)** - the Norwegian Meteorological Institute's free weather API.
 
-This is a Next.js application called Weatherwise 2.0, an intelligent weather companion.
+## ✨ Features
 
-## Features
+- **Real-time Weather Data**: Powered by MET Norway's Yr.no API (free, no API key required)
+- **Smart Day Planning**: AI-powered recommendations based on weather conditions
+- **Weather Stories**: Engaging narratives about your local weather
+- **Music Recommendations**: Weather-appropriate music suggestions
+- **Clothing & Food Suggestions**: Personalized recommendations
+- **Medical Tips**: Health advice based on weather conditions
+- **Emergency Features**: Safety alerts and emergency contact integration
+- **Offline Survival Kit**: Essential weather information available offline
+- **Air Quality Alerts**: Real-time air quality monitoring
+- **Interactive Maps**: OpenStreetMap integration with weather overlays
+- **Dark Mode**: Beautiful dark/light theme switching
+- **Mobile Responsive**: Optimized for all devices
 
-- **Weather Display**: Shows current weather and forecast.
-- **AI Weather Summary**: Provides a conversational summary of the current weather using Genkit.
-- **Smart Day Planner**: AI-generated personalized advice for your day (e.g., "Carry an umbrella; rain expected at 4 PM").
-- **AI Weather Stories**: Generates short, fun weather-themed stories, great for kids.
-- **Mood-Based Music**: Recommends music from YouTube based on weather, using AI to refine search queries.
-- **Clothing Suggestion**: Suggests appropriate attire.
-- **Food Suggestion**: Recommends seasonal food and drinks.
-- **Medical Tips**: Provides weather-relevant health advice.
-- **Nearby Shelters**: Displays local hospitals, police stations, and shelters on a map using Leaflet.js and OpenStreetMap for map tiles. Points of interest are fetched using the Mapbox Geocoding API.
-- **Emergency Button**: SOS button for quick emergency contact, including a QR code with basic info.
-- **Battery Saver Alert**: Warns you to save power if your device battery is low and bad weather is approaching.
-- **Air Quality Alerts**: Placeholder for displaying AQI and related health tips (requires AQI API integration).
-- **Offline Survival Kit**: Basic emergency numbers and tips shown when offline.
-- **Placeholders for Future Features**:
-    - Weather-Based Reminder System
-    - Live Weather Cam Integration
-    - Multi-Language Support (English, Hindi, Marathi)
-    - Route Safety Checker
-    - "Mark Me Safe" Button (Firebase integration needed)
-    - Nearby Volunteer Help (Firebase integration needed)
-    - Hospital Queue Wait-Time Estimator (Firebase/dummy data needed)
-    - AI Weather Bot
+## 🚀 Quick Start
 
-## Getting Started
+1. **Clone the repository**
+   ```bash
+   git clone <your-repo-url>
+   cd WeatherWise-2.0
+   ```
 
-First, install the dependencies:
-```bash
-npm install
-# or
-yarn install
-# or
-pnpm install
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Open your browser**
+   Navigate to `http://localhost:3000`
+
+## 🌍 Weather Data Source
+
+This application uses the **MET Norway (Yr.no) API**, which provides:
+- Free weather data with no API key required
+- High-quality meteorological data from the Norwegian Meteorological Institute
+- Global coverage with detailed forecasts
+- Reliable and accurate weather information
+
+## 🛠️ Technology Stack
+
+- **Frontend**: Next.js 15, React 18, TypeScript
+- **Styling**: Tailwind CSS, shadcn/ui components
+- **Weather API**: MET Norway (Yr.no) - Free, no API key required
+- **Geocoding**: OpenStreetMap Nominatim API
+- **AI Features**: Google AI (Genkit) for weather summaries and recommendations
+- **Maps**: OpenStreetMap with Leaflet
+- **Charts**: Chart.js and Recharts
+- **Icons**: Lucide React
+
+## 📱 Features in Detail
+
+### Weather Information
+- Current conditions with detailed metrics
+- 3-day forecast with hourly breakdowns
+- Temperature, humidity, wind, pressure, UV index
+- Weather condition icons and descriptions
+
+### Smart Features
+- **AI Weather Summary**: Conversational weather summaries
+- **Day Planner**: Personalized activity recommendations
+- **Weather Stories**: Engaging narratives about local weather
+- **Music Recommendations**: Weather-appropriate music suggestions
+
+### Safety & Health
+- **Emergency Button**: Quick access to emergency services
+- **Medical Tips**: Health advice based on weather conditions
+- **Air Quality Monitoring**: Real-time air quality alerts
+- **Battery Saver Alerts**: Low battery warnings during bad weather
+
+### Location Services
+- **GPS Integration**: Automatic location detection
+- **Manual Location Entry**: Search by city name or coordinates
+- **Reverse Geocoding**: Get location names from coordinates
+- **Interactive Maps**: Visual weather and location data
+
+## 🔧 Configuration
+
+### Environment Variables
+No API keys required! The application uses free services:
+- Yr.no API (weather data) - No key needed
+- OpenStreetMap Nominatim (geocoding) - No key needed
+
+### Optional AI Features
+For AI-powered features (weather summaries, day planning), you can optionally configure:
+```env
+GOOGLE_AI_API_KEY=your_google_ai_key
 ```
 
-Next, set up your environment variables. Create a file named `.env.local` in the root of your project and add the following API keys:
+## 📁 Project Structure
 
 ```
-NEXT_PUBLIC_WEATHER_API_KEY=your_weatherapi_com_key
-NEXT_PUBLIC_YOUTUBE_API_KEY=your_youtube_data_api_key
-NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN=your_mapbox_access_token_for_poi_data
-NEXT_PUBLIC_AQI_API_KEY=your_aqi_api_key (for Air Quality Index feature)
+src/
+├── app/                 # Next.js app directory
+├── components/          # React components
+│   ├── ui/             # shadcn/ui components
+│   └── ...             # Feature components
+├── lib/                # Utility functions and services
+│   ├── yr-weather-service.ts    # Yr.no API integration
+│   ├── geocoding-service.ts     # Location services
+│   └── ...             # Other utilities
+├── types/              # TypeScript type definitions
+│   ├── yr-weather.d.ts # Yr.no API types
+│   └── ...             # Other type definitions
+├── ai/                 # AI features (Genkit)
+│   └── flows/          # AI workflows
+└── hooks/              # Custom React hooks
 ```
 
-Replace `your_..._key` with your actual API keys from the respective services:
-- [WeatherAPI.com](https://www.weatherapi.com/)
-- [Google Cloud Console (for YouTube Data API)](https://console.cloud.google.com/)
-- [Mapbox](https://www.mapbox.com/) (Access token is used for fetching Points of Interest, map tiles are from OpenStreetMap)
-- An Air Quality Index (AQI) provider like [AQICN](https://aqicn.org/api/) or [OpenWeatherMap Air Pollution API](https://openweathermap.org/api/air-pollution).
+## 🌟 Key Components
 
+### Weather Service (`src/lib/yr-weather-service.ts`)
+- Handles Yr.no API calls
+- Converts Yr.no data to compatible format
+- Manages weather symbol mapping
+- Provides temperature and unit conversions
 
-Then, run the development server:
+### Geocoding Service (`src/lib/geocoding-service.ts`)
+- Location name to coordinates conversion
+- Reverse geocoding (coordinates to location name)
+- Uses OpenStreetMap Nominatim API
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
+### Weather Display (`src/components/WeatherDisplay.tsx`)
+- Main weather information display
+- Current conditions and forecast
+- Responsive design with beautiful UI
 
-Open [http://localhost:9002](http://localhost:9002) (or your configured port) with your browser to see the result.
+## 🎨 UI/UX Features
 
-The main application page is located at `src/app/page.tsx`.
-AI flows are in `src/ai/flows/`.
+- **Responsive Design**: Works perfectly on mobile, tablet, and desktop
+- **Dark Mode**: Toggle between light and dark themes
+- **Loading States**: Smooth loading animations
+- **Error Handling**: User-friendly error messages
+- **Accessibility**: WCAG compliant design
+
+## 🔮 Future Features
+
+- Multi-language support (English, Hindi, Marathi)
+- Weather-based reminder system
+- Live weather camera integration
+- Route safety checker
+- Hospital queue wait-time estimator
+- AI weather chatbot
+- User safety status sharing
+- Volunteer help coordination
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
+
+This project is open source and available under the [MIT License](LICENSE).
+
+## 🙏 Acknowledgments
+
+- **MET Norway (Yr.no)**: For providing free, high-quality weather data
+- **OpenStreetMap**: For free geocoding and mapping services
+- **shadcn/ui**: For beautiful, accessible UI components
+- **Next.js Team**: For the amazing React framework
+
+---
+
+**WeatherWise 2.0** - Making weather information accessible, intelligent, and beautiful! 🌤️
 
