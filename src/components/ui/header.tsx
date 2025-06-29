@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Input } from './input';
 import { Button } from './button';
 import { Settings, Siren, Search, Sun, Moon } from 'lucide-react';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './dialog';
 
 export default function Header({
   searchValue,
@@ -28,7 +29,7 @@ export default function Header({
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
-    <header className="w-full bg-white/80 dark:bg-gray-900/80 shadow-md backdrop-blur sticky top-0 z-40">
+    <header className="w-full bg-blue-50 dark:bg-blue-900 shadow-md border-b border-blue-200 dark:border-blue-800 backdrop-blur sticky top-0 z-40">
       <div className="max-w-6xl mx-auto flex flex-row items-center justify-between py-3 px-4 gap-4">
         {/* Left: Logo + App Name */}
         <div className="flex items-center gap-3 min-w-[180px]">
@@ -50,50 +51,49 @@ export default function Header({
               <Search className="h-5 w-5" />
             </Button>
           </form>
-          {/* Settings Gear + Dropdown */}
+          {/* Settings Gear + Modal */}
           <div className="flex items-center gap-4 mt-1">
             <Button
               type="button"
-              className="rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg h-12 w-12 flex items-center justify-center animate-pulse hover:animate-none"
+              className="rounded-full bg-red-600 hover:bg-red-700 text-white shadow-xl h-14 w-14 flex items-center justify-center animate-pulse hover:animate-none text-lg font-bold border-4 border-red-700"
               onClick={onSOSClick}
               aria-label="Emergency SOS"
             >
-              <Siren className="h-7 w-7" />
+              <Siren className="h-8 w-8" />
             </Button>
-            <div className="relative">
-              <Button
-                type="button"
-                variant="ghost"
-                className="rounded-full p-2"
-                onClick={() => setSettingsOpen((v) => !v)}
-                aria-label="Settings"
-              >
-                <Settings className="h-7 w-7" />
-              </Button>
-              {settingsOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 z-50 border border-gray-200 dark:border-gray-700">
-                  <div className="px-4 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200">Language</div>
-                  <div className="flex gap-2 px-4 pb-2">
+            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+              <DialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="rounded-full p-2"
+                  aria-label="Settings"
+                >
+                  <Settings className="h-7 w-7" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Settings</DialogTitle>
+                  <DialogDescription>Personalize your Weatherwise experience.</DialogDescription>
+                </DialogHeader>
+                <div className="py-2">
+                  <div className="font-semibold mb-1">Language</div>
+                  <div className="flex gap-2 mb-4">
                     <Button variant={language === 'en' ? 'default' : 'outline'} size="sm" onClick={() => onLanguageChange('en')}>English</Button>
                     <Button variant={language === 'hi' ? 'default' : 'outline'} size="sm" onClick={() => onLanguageChange('hi')}>हिन्दी</Button>
                     <Button variant={language === 'mr' ? 'default' : 'outline'} size="sm" onClick={() => onLanguageChange('mr')}>मराठी</Button>
                   </div>
-                  <div className="border-t border-gray-200 dark:border-gray-700 my-2" />
-                  <button
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={onThemeToggle}
-                  >
-                    {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />} Switch Theme
-                  </button>
-                  <button
-                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    onClick={onAboutClick}
-                  >
-                    About Us
-                  </button>
+                  <div className="font-semibold mb-1">Theme</div>
+                  <Button onClick={onThemeToggle} className="mb-4">
+                    {theme === 'light' ? <Moon className="h-5 w-5 mr-2" /> : <Sun className="h-5 w-5 mr-2" />} Switch Theme
+                  </Button>
+                  <div className="font-semibold mb-1">About</div>
+                  <Button onClick={onAboutClick} variant="outline">About Us</Button>
+                  <div className="mt-6 text-xs text-muted-foreground">More settings coming soon...</div>
                 </div>
-              )}
-            </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>
