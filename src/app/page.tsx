@@ -26,6 +26,7 @@ import DarkModeToggle from '../components/DarkModeToggle';
 import { getYrWeather } from '@/lib/yr-weather-service';
 import { geocodeLocation, reverseGeocode } from '@/lib/geocoding-service';
 import AIWeatherBot from "@/components/AIWeatherBot";
+import Header from '@/components/ui/header';
 
 // Remove the API key requirement since Yr.no is free
 // const WEATHER_API_KEY = process.env.NEXT_PUBLIC_WEATHER_API_KEY;
@@ -44,6 +45,38 @@ const NearbySheltersMap = dynamic(
   }
 );
 
+// Add a function to determine background gradient based on weather
+function getBackgroundGradient(weatherData: ConvertedWeatherAPIResponse | null, theme: 'light' | 'dark') {
+  if (!weatherData) {
+    return theme === 'dark'
+      ? 'bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900'
+      : 'bg-gradient-to-br from-blue-50 via-white to-blue-100';
+  }
+  const condition = weatherData.current.condition.text.toLowerCase();
+  if (condition.includes('sunny') || condition.includes('clear')) {
+    return theme === 'dark'
+      ? 'bg-gradient-to-br from-yellow-700 via-gray-900 to-blue-900'
+      : 'bg-gradient-to-br from-yellow-200 via-blue-100 to-blue-300';
+  }
+  if (condition.includes('rain') || condition.includes('shower') || condition.includes('drizzle')) {
+    return theme === 'dark'
+      ? 'bg-gradient-to-br from-gray-700 via-blue-900 to-gray-900'
+      : 'bg-gradient-to-br from-gray-300 via-blue-200 to-blue-400';
+  }
+  if (condition.includes('cloud')) {
+    return theme === 'dark'
+      ? 'bg-gradient-to-br from-gray-800 via-gray-900 to-gray-700'
+      : 'bg-gradient-to-br from-gray-100 via-gray-300 to-blue-200';
+  }
+  if (condition.includes('snow')) {
+    return theme === 'dark'
+      ? 'bg-gradient-to-br from-blue-900 via-gray-800 to-white/10'
+      : 'bg-gradient-to-br from-white via-blue-100 to-blue-300';
+  }
+  return theme === 'dark'
+    ? 'bg-gradient-to-br from-gray-900 via-gray-950 to-gray-900'
+    : 'bg-gradient-to-br from-blue-50 via-white to-blue-100';
+}
 
 export default function HomePage() {
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
@@ -57,9 +90,17 @@ export default function HomePage() {
   const [showDayPlanAdvice, setShowDayPlanAdvice] = useState(false);
   const [userStatus, setUserStatus] = useState<string>("Safe"); // For "Mark Me Safe" and QR
   const [showSpecialMap, setShowSpecialMap] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [language, setLanguage] = useState('en');
+  const [aboutOpen, setAboutOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
+    // Load theme from localStorage if available
+    const storedTheme = typeof window !== 'undefined' ? localStorage.getItem('theme') : null;
+    if (storedTheme === 'light' || storedTheme === 'dark') {
+      setTheme(storedTheme);
+    }
   }, []);
 
   const handleLocationError = useCallback((err: GeolocationPositionError | Error) => {
@@ -164,84 +205,96 @@ export default function HomePage() {
     setShowDayPlanAdvice(true);
   };
 
+  // Handler functions for Header
+  const handleThemeToggle = () => {
+    const newTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(newTheme);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('theme', newTheme);
+    }
+  };
+  const handleLanguageChange = (lang: string) => setLanguage(lang);
+  const handleAboutClick = () => setAboutOpen(true);
+  const handleSOSClick = () => {
+    // Open the EmergencyButton dialog (if needed, can be improved)
+    // For now, scroll to Emergency section or show alert
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center p-4 md:p-8 relative">
-      <OfflineSurvivalKit />
-      <header className="w-full max-w-6xl mb-8 text-center">
-        <div className="flex justify-end items-center w-full mb-2 gap-4">
-          <DarkModeToggle />
-          <EmergencyButton latitude={location?.latitude ?? null} longitude={location?.longitude ?? null} currentStatus={userStatus} />
-        </div>
-        <h1 className="text-4xl md:text-5xl font-bold text-primary flex items-center justify-center">
-          <Sun className="w-10 h-10 md:w-12 md:w-12 mr-3 animate-spin [animation-duration:10s]" /> Weatherwise 2.0
-        </h1>
-        <p className="text-lg md:text-xl text-muted-foreground mt-2">Your intelligent weather companion</p>
-        <form onSubmit={handleManualLocationSubmit} className="flex flex-col sm:flex-row gap-2 items-center justify-center mt-4">
-          <Input
-            type="text"
-            value={manualLocationInput}
-            onChange={(e) => setManualLocationInput(e.target.value)}
-            placeholder="Enter city name or coordinates (lat,lon)"
-            aria-label="Enter location"
-            className="flex-grow text-base max-w-xs"
-          />
-          <Button type="submit" className="w-full sm:w-auto" disabled={loadingWeather}>
-            <Search className="mr-2 h-4 w-4" /> Get Weather
-          </Button>
-        </form>
-      </header>
-       
-      <BatterySaverAlert weatherData={weatherData} />
-
-      <main className="w-full max-w-6xl space-y-8">
-        {!location && (loadingLocation || loadingWeather) && (
-          <div className="flex flex-col items-center justify-center p-8 bg-card rounded-lg shadow-lg">
-            <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
-            <p className="text-lg text-muted-foreground">Fetching your location and weather...</p>
+    <div className={`min-h-screen text-foreground flex flex-col items-center p-0 md:p-0 relative transition-colors duration-300 ${theme === 'dark' ? 'dark' : ''} ${getBackgroundGradient(weatherData, theme)}`}>
+      <Header
+        searchValue={manualLocationInput}
+        onSearchChange={(e) => setManualLocationInput(e.target.value)}
+        onSearchSubmit={handleManualLocationSubmit}
+        onSOSClick={handleSOSClick}
+        onThemeToggle={handleThemeToggle}
+        theme={theme}
+        language={language}
+        onLanguageChange={handleLanguageChange}
+        onAboutClick={handleAboutClick}
+      />
+      {/* About Us Modal (placeholder) */}
+      {aboutOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-8 max-w-md w-full relative">
+            <button className="absolute top-2 right-2 text-gray-500 hover:text-gray-800" onClick={() => setAboutOpen(false)}>&times;</button>
+            <h2 className="text-2xl font-bold mb-2">About Weatherwise 2.0</h2>
+            <p className="text-gray-700 dark:text-gray-200">Your intelligent weather companion. Built with ❤️ for modern, user-friendly weather insights and safety features.</p>
           </div>
-        )}
-
-        {error && !loadingWeather && (
-          <div className="p-6 bg-destructive/10 border border-destructive rounded-lg shadow-md text-center">
-            <div className="flex items-center justify-center mb-2">
-              <AlertTriangle className="h-6 w-6 text-destructive mr-2" />
-              <p className="text-destructive font-semibold">{error}</p>
+        </div>
+      )}
+      <OfflineSurvivalKit />
+      <main className="w-full max-w-6xl px-4 md:px-8 space-y-8 mt-8">
+        {/* Weather Main Card + 3-Day Forecast */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="md:col-span-2">
+            <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
+              <WeatherDisplay weatherData={weatherData} loading={loadingWeather || (loadingLocation && !weatherData)} />
+        </div>
+            <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 mt-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
+              <WeatherSummary weatherData={weatherData} loadingWeather={loadingWeather || (loadingLocation && !weatherData)} />
             </div>
           </div>
-        )}
-
-        <WeatherDisplay weatherData={weatherData} loading={loadingWeather || (loadingLocation && !weatherData)} />
-        
-        <WeatherSummary weatherData={weatherData} loadingWeather={loadingWeather || (loadingLocation && !weatherData)} />
-        
+          <div className="flex flex-col gap-6">
+            <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
         <SmartDayPlanner 
             weatherData={weatherData} 
             loadingWeather={loadingWeather || (loadingLocation && !weatherData)}
             onPlanMyDayClick={handlePlanMyDayClick}
             showAdvice={showDayPlanAdvice}
         />
-
-        <WeatherStory weatherData={weatherData} loadingWeather={loadingWeather || (loadingLocation && !weatherData)} />
-        
+            </div>
+            <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
         <AirQualityAlerts latitude={location?.latitude ?? null} longitude={location?.longitude ?? null} />
-
-
+            </div>
+          </div>
+        </div>
+        {/* 3-Day Forecast Card (separate for mobile) */}
+        <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 md:hidden">
+          {/* You can add a mobile-optimized forecast here if needed */}
+        </div>
+        {/* Suggestions, Music, Food, Medical, etc. */}
         {weatherData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <div className="space-y-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
               <MusicRecommendations weatherCondition={weatherData.current.condition.text} />
+            </div>
+            <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
               <ClothingSuggestions
                 weatherCondition={weatherData.current.condition.text}
                 temperature={weatherData.current.temp_c}
                 loading={loadingWeather}
               />
             </div>
-            <div className="space-y-8">
+            <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
               <FoodSuggestions
                 weatherCondition={weatherData.current.condition.text}
                 temperature={weatherData.current.temp_c}
                 loading={loadingWeather}
               />
+            </div>
+            <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
               <MedicalTips
                 weatherCondition={weatherData.current.condition.text}
                 temperature={weatherData.current.temp_c}
@@ -250,39 +303,21 @@ export default function HomePage() {
             </div>
           </div>
         )}
-
-        {isClient && location && <NearbySheltersMap latitude={location.latitude} longitude={location.longitude} />}
-
-        {/* --- New Features Start --- */}
-        <SectionCard title="Weather-Based Reminder System" icon={CalendarClock}>
-          <form className="flex flex-col md:flex-row gap-2 items-center">
-            <Input type="text" placeholder="Enter reminder (e.g. Take umbrella if rain)" className="flex-grow" />
-            <Button type="submit">Set Reminder</Button>
-          </form>
-          <p className="text-xs text-muted-foreground mt-2">Reminders will be triggered based on weather conditions.</p>
-        </SectionCard>
-
-        <SectionCard title="Multi-Language Support" icon={Languages}>
-          <div className="flex gap-4 items-center">
-            <Button variant="outline">English</Button>
-            <Button variant="outline">हिन्दी</Button>
-            <Button variant="outline">मराठी</Button>
+        {/* Weather Story, Trends, and Map */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
+            <WeatherStory weatherData={weatherData} loadingWeather={loadingWeather || (loadingLocation && !weatherData)} />
           </div>
-          <p className="text-xs text-muted-foreground mt-2">Switch app language. (Basic demo, full translation coming soon!)</p>
-        </SectionCard>
-
-        <SectionCard title="AI Weather Bot" icon={MessageCircleQuestion}>
-          <div className="flex flex-col gap-2">
-            <div className="bg-muted p-4 rounded-lg min-h-[80px]">AI Bot: Hello! Ask me anything about the weather.</div>
-            <form className="flex gap-2">
-              <Input type="text" placeholder="Type your weather question..." className="flex-grow" />
-              <Button type="submit">Send</Button>
-            </form>
+          <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
+            <WeatherTrendsChart />
           </div>
-          <p className="text-xs text-muted-foreground mt-2">Conversational weather assistant (demo, AI integration coming soon).</p>
-        </SectionCard>
-        {/* --- New Features End --- */}
-
+        </div>
+        {/* Nearby Shelters Map */}
+        {isClient && location && (
+          <div className="rounded-lg shadow-xl bg-white/30 dark:bg-gray-900/40 backdrop-blur-xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl animate-fade-in">
+            <NearbySheltersMap latitude={location.latitude} longitude={location.longitude} />
+          </div>
+        )}
         {/* Special Map Overlay Toggle */}
         <div className="flex flex-col items-center my-8">
           <Button onClick={() => setShowSpecialMap((v) => !v)}>
@@ -294,7 +329,6 @@ export default function HomePage() {
             </div>
           )}
         </div>
-
       </main>
       <footer className="w-full max-w-6xl mt-12 pt-8 border-t border-primary/20 text-center">
         <p className="text-sm text-muted-foreground">

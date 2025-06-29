@@ -73,13 +73,13 @@ export function EmergencyButton({ latitude, longitude, currentStatus = "Status U
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div>
       <AlertDialog open={isAlertOpen} onOpenChange={(open) => { setIsAlertOpen(open); if(!open) setShowQrCode(false);}}>
         <AlertDialogTrigger asChild>
           <Button
             variant="destructive"
             size="lg"
-            className="rounded-full p-4 shadow-xl animate-pulse hover:animate-none flex items-center gap-2 h-16 w-16 md:h-auto md:w-auto md:px-6"
+            className="rounded-full p-4 shadow-xl animate-pulse hover:animate-none flex items-center gap-2 h-16 w-16 md:h-auto md:w-auto md:px-6 bg-red-600 hover:bg-red-700 text-white border-none"
             aria-label="Emergency SOS"
           >
             <Siren className="h-8 w-8 md:h-6 md:w-6" />
@@ -105,12 +105,6 @@ export function EmergencyButton({ latitude, longitude, currentStatus = "Status U
                   level="M" // Error correction level
                   bgColor="#ffffff"
                   fgColor="#000000"
-                  imageSettings={{ // Optional: embed a small logo
-                    // src: "/path/to/your/logo.png",
-                    // height: 30,
-                    // width: 30,
-                    // excavate: true, // Cuts out the middle for the logo
-                  }}
                 />
               )}
               <p className="text-xs text-muted-foreground mt-2 text-center whitespace-pre-wrap">{qrValue}</p>

@@ -13,6 +13,8 @@ export default {
         body: ['var(--font-inter)', 'Inter', 'sans-serif'],
         headline: ['var(--font-space-grotesk)', 'Space Grotesk', 'sans-serif'],
         code: ['monospace'],
+        'inter': ['Inter', 'sans-serif'],
+        'poppins': ['Poppins', 'sans-serif'],
       },
       colors: {
         background: 'hsl(var(--background))',

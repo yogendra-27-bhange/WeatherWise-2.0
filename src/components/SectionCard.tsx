@@ -15,7 +15,7 @@ interface SectionCardProps {
 
 export function SectionCard({ title, icon: Icon, children, className = '', contentClassName }: SectionCardProps) {
   return (
-    <section className={`section-card animate-fade-in animate-slide-up ${className} p-6 mb-6 bg-white rounded-2xl shadow-lg border border-blue-100`}> 
+    <section className={`section-card animate-fade-in animate-slide-up ${className} p-6 mb-6 bg-white/30 backdrop-blur-xl shadow-xl border border-white/20`}> 
       <div className="flex items-center gap-3 mb-4">
         {Icon && <Icon className="w-6 h-6 text-blue-400 animate-bounce-in" />}
         <h2 className="text-xl font-bold text-blue-700">{title}</h2>
