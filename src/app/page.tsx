@@ -168,13 +168,27 @@ export default function HomePage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center p-4 md:p-8 relative">
       <OfflineSurvivalKit />
       <header className="w-full max-w-6xl mb-8 text-center">
-        <div className="flex justify-end w-full mb-2">
+        <div className="flex justify-end items-center w-full mb-2 gap-4">
           <DarkModeToggle />
+          <EmergencyButton latitude={location?.latitude ?? null} longitude={location?.longitude ?? null} currentStatus={userStatus} />
         </div>
         <h1 className="text-4xl md:text-5xl font-bold text-primary flex items-center justify-center">
           <Sun className="w-10 h-10 md:w-12 md:w-12 mr-3 animate-spin [animation-duration:10s]" /> Weatherwise 2.0
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground mt-2">Your intelligent weather companion</p>
+        <form onSubmit={handleManualLocationSubmit} className="flex flex-col sm:flex-row gap-2 items-center justify-center mt-4">
+          <Input
+            type="text"
+            value={manualLocationInput}
+            onChange={(e) => setManualLocationInput(e.target.value)}
+            placeholder="Enter city name or coordinates (lat,lon)"
+            aria-label="Enter location"
+            className="flex-grow text-base max-w-xs"
+          />
+          <Button type="submit" className="w-full sm:w-auto" disabled={loadingWeather}>
+            <Search className="mr-2 h-4 w-4" /> Get Weather
+          </Button>
+        </form>
       </header>
        
       <BatterySaverAlert weatherData={weatherData} />
@@ -194,25 +208,6 @@ export default function HomePage() {
               <p className="text-destructive font-semibold">{error}</p>
             </div>
           </div>
-        )}
-
-        {(!location || error) && !loadingLocation && !loadingWeather && (
-          <form onSubmit={handleManualLocationSubmit} className="flex flex-col sm:flex-row gap-2 items-center p-6 bg-card rounded-lg shadow-lg">
-            <Input
-              type="text"
-              value={manualLocationInput}
-              onChange={(e) => setManualLocationInput(e.target.value)}
-              placeholder="Enter city name or coordinates (lat,lon)"
-              aria-label="Enter location"
-              className="flex-grow text-base"
-            />
-            <Button type="submit" className="w-full sm:w-auto" disabled={loadingWeather}>
-              <Search className="mr-2 h-4 w-4" /> Get Weather
-            </Button>
-            <Button type="button" variant="outline" onClick={requestGeolocation} className="w-full sm:w-auto" disabled={loadingLocation || loadingWeather}>
-                <LocateFixed className="mr-2 h-4 w-4" /> Use My Location
-            </Button>
-          </form>
         )}
 
         <WeatherDisplay weatherData={weatherData} loading={loadingWeather || (loadingLocation && !weatherData)} />
@@ -301,7 +296,6 @@ export default function HomePage() {
         </div>
 
       </main>
-      <EmergencyButton latitude={location?.latitude ?? null} longitude={location?.longitude ?? null} currentStatus={userStatus} />
       <footer className="w-full max-w-6xl mt-12 pt-8 border-t border-primary/20 text-center">
         <p className="text-sm text-muted-foreground">
           Weatherwise 2.0 &copy; {new Date().getFullYear()}. Weather data powered by <a href="https://www.met.no/en" title="Norwegian Meteorological Institute" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">MET Norway (Yr.no)</a>.
