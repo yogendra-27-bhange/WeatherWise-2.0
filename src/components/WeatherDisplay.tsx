@@ -18,7 +18,7 @@ interface WeatherDisplayProps {
 export function WeatherDisplay({ weatherData, loading }: WeatherDisplayProps) {
   if (loading) {
     return (
-      <Card className="shadow-lg w-full bg-primary/10 backdrop-blur-md">
+      <div className="glass-card w-full">
         <CardHeader>
           <Skeleton className="h-8 w-3/4" />
           <Skeleton className="h-4 w-1/2" />
@@ -41,27 +41,27 @@ export function WeatherDisplay({ weatherData, loading }: WeatherDisplayProps) {
             </div>
           </div>
         </CardContent>
-      </Card>
+      </div>
     );
   }
 
   if (!weatherData) {
     return (
-       <Card className="shadow-lg w-full">
+       <div className="glass-card w-full">
         <CardHeader>
           <CardTitle>Weather Information</CardTitle>
         </CardHeader>
         <CardContent>
           <p>Enter a location or allow access to display weather data.</p>
         </CardContent>
-      </Card>
+      </div>
     );
   }
 
   const { current, location, forecast } = weatherData;
 
   return (
-    <Card className="shadow-xl w-full bg-gradient-to-br from-primary/20 to-background backdrop-blur-lg border-primary/30">
+    <div className="glass-card w-full">
       <CardHeader className="pb-2">
         <CardTitle className="text-3xl md:text-4xl font-headline text-primary flex items-center">
           <MapPin className="mr-2 h-7 w-7" /> {location.name}, {location.country}
@@ -100,7 +100,7 @@ export function WeatherDisplay({ weatherData, loading }: WeatherDisplayProps) {
           <h3 className="text-xl md:text-2xl font-semibold mb-3 font-headline text-primary">3-Day Forecast</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {forecast.forecastday.slice(0, 3).map((day) => (
-              <Card key={day.date_epoch} className="p-4 bg-background/50 shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div key={day.date_epoch} className="glass-card p-4 bg-white/30 dark:bg-blue-900/40 shadow-md hover:shadow-lg transition-shadow duration-300">
                 <div className="flex flex-col items-center text-center">
                   <p className="font-semibold text-base md:text-lg">{format(new Date(day.date_epoch * 1000), "EEEE")}</p>
                   <p className="text-xs text-foreground/70 mb-1">{format(new Date(day.date_epoch * 1000), "MMM d")}</p>
@@ -116,7 +116,7 @@ export function WeatherDisplay({ weatherData, loading }: WeatherDisplayProps) {
                   <p className="text-lg md:text-xl font-bold text-primary">{day.day.maxtemp_c}°C / {day.day.mintemp_c}°C</p>
                   <p className="text-xs md:text-sm text-foreground/80 capitalize truncate w-full">{day.day.condition.text}</p>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </div>
@@ -129,7 +129,7 @@ export function WeatherDisplay({ weatherData, loading }: WeatherDisplayProps) {
         )}
 
       </CardContent>
-    </Card>
+    </div>
   );
 }
 

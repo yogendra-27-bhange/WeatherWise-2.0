@@ -6,10 +6,32 @@
 
 body {
   min-height: 100vh;
-  background: linear-gradient(135deg, #60a5fa 0%, #a5b4fc 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
   font-family: 'Inter', sans-serif;
   color: #1e293b;
   transition: background 0.5s;
+}
+
+/* Glassmorphism card utility */
+.glass-card {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-radius: 1.5rem;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  transition: box-shadow 0.3s, border 0.3s, transform 0.2s;
+}
+.glass-card:hover {
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.22);
+  border: 2px solid rgba(99, 102, 241, 0.35);
+  transform: translateY(-4px) scale(1.03);
+}
+
+.dark .glass-card {
+  background: rgba(30, 41, 59, 0.35);
+  border: 1.5px solid rgba(99, 102, 241, 0.18);
+  color: #f1f5f9;
 }
 
 @layer base {
