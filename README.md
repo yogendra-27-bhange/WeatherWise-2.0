@@ -1,4 +1,4 @@
-# ��️ WeatherWise 2.0
+# WeatherWise 2.0
 
 **Live Demo:** [https://weatherwise2-0.netlify.app/](https://weatherwise2-0.netlify.app/)
 
